@@ -1,0 +1,87 @@
+# %% [markdown]
+# # AI Business Analytics Agent Workflow — Starter Notebook
+#
+# Goal: Build a small analyst workflow:
+# read data → inspect quality → clean → build metrics → model risk → generate insight → draft alert.
+
+# %%
+import pandas as pd
+import numpy as np
+
+from src.agent_workflow import (
+    load_raw_data,
+    data_reader_agent,
+    data_quality_agent,
+    clean_data,
+    build_order_fact,
+    monthly_metrics,
+    metrics_by_channel,
+    detect_revenue_drop,
+    build_alert_email,
+)
+
+# %%
+raw = load_raw_data("data/raw")
+table_summary = data_reader_agent(raw)
+table_summary
+
+# %%
+quality_report = data_quality_agent(raw)
+quality_report
+
+# %%
+clean = clean_data(raw)
+order_fact = build_order_fact(clean)
+
+order_fact.head()
+
+# %%
+monthly = monthly_metrics(order_fact)
+monthly.tail()
+
+# %%
+channel_metrics = metrics_by_channel(order_fact)
+channel_metrics
+
+# %%
+alert = detect_revenue_drop(monthly, threshold=0.10)
+alert
+
+# %%
+email = build_alert_email(alert, channel_metrics)
+print(email)
+
+# %% [markdown]
+# ## Optional: logistic regression model
+#
+# This is the "not too simple statistics" section.
+# We use logistic regression to understand low-review risk.
+
+# %%
+# pip install statsmodels
+
+import statsmodels.formula.api as smf
+
+model_df = order_fact[
+    (order_fact["order_status"] == "delivered")
+    & order_fact["delivery_days_clean"].notna()
+    & order_fact["payment_value"].notna()
+    & order_fact["freight_value"].notna()
+].copy()
+
+model = smf.logit(
+    formula="low_review ~ delivery_days_clean + payment_value + freight_value",
+    data=model_df
+).fit()
+
+print(model.summary())
+
+# %%
+odds_ratios = np.exp(model.params)
+odds_ratios
+
+# %% [markdown]
+# Interpretation prompt:
+#
+# Use only the verified model output above. Explain whether delivery delay is associated
+# with low-review risk. Do not claim causality. Explain odds ratio and p-value in business language.

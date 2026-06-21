@@ -1,0 +1,271 @@
+"""
+AI Business Analytics Agent Workflow
+
+This script is intentionally framework-light:
+- Python/Pandas are the source of truth for numbers.
+- Agent prompts are used for planning and communication.
+- No LLM API key is required for the default workflow.
+
+Run:
+    python src/agent_workflow.py
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+import json
+import numpy as np
+import pandas as pd
+
+
+RAW_DIR = Path("data/raw")
+OUTPUT_DIR = Path("outputs")
+
+
+def load_raw_data(raw_dir: str | Path = RAW_DIR) -> dict[str, pd.DataFrame]:
+    raw_dir = Path(raw_dir)
+    return {
+        "customers": pd.read_csv(raw_dir / "customers.csv"),
+        "orders": pd.read_csv(raw_dir / "orders.csv"),
+        "order_items": pd.read_csv(raw_dir / "order_items.csv"),
+        "payments": pd.read_csv(raw_dir / "payments.csv"),
+        "reviews": pd.read_csv(raw_dir / "reviews.csv"),
+        "activity": pd.read_csv(raw_dir / "activity.csv"),
+    }
+
+
+def inspect_table(df: pd.DataFrame, name: str) -> dict:
+    return {
+        "table": name,
+        "rows": int(df.shape[0]),
+        "columns": int(df.shape[1]),
+        "dtypes": df.dtypes.astype(str).to_dict(),
+        "missing": df.isna().sum().astype(int).to_dict(),
+        "duplicate_rows": int(df.duplicated().sum()),
+    }
+
+
+def data_reader_agent(data: dict[str, pd.DataFrame]) -> dict:
+    return {name: inspect_table(df, name) for name, df in data.items()}
+
+
+def data_quality_agent(data: dict[str, pd.DataFrame]) -> dict:
+    customers = data["customers"].copy()
+    orders = data["orders"].copy()
+    payments = data["payments"].copy()
+
+    orders["order_purchase_date"] = pd.to_datetime(orders["order_purchase_date"], errors="coerce")
+    orders["order_delivered_date"] = pd.to_datetime(orders["order_delivered_date"], errors="coerce")
+
+    delivery_days = (orders["order_delivered_date"] - orders["order_purchase_date"]).dt.days
+
+    return {
+        "customers_duplicate_rows": int(customers.duplicated().sum()),
+        "customers_missing_age": int(customers["age"].isna().sum()),
+        "orders_missing_delivery_date": int(orders["order_delivered_date"].isna().sum()),
+        "orders_negative_delivery_days": int((delivery_days < 0).sum()),
+        "payments_zero_or_negative": int((payments["payment_value"] <= 0).sum()),
+        "recommended_cleaning_rules": [
+            "Drop exact duplicate customer rows.",
+            "Convert all date fields to datetime.",
+            "Treat canceled orders separately from delivered orders.",
+            "Flag negative delivery days for data quality review.",
+            "Impute missing age with median only for demo analysis, and document the assumption.",
+        ],
+    }
+
+
+def clean_data(data: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
+    cleaned = {k: v.copy() for k, v in data.items()}
+
+    cleaned["customers"] = cleaned["customers"].drop_duplicates()
+    cleaned["customers"]["age"] = cleaned["customers"]["age"].fillna(cleaned["customers"]["age"].median())
+
+    for col in ["signup_date"]:
+        cleaned["customers"][col] = pd.to_datetime(cleaned["customers"][col], errors="coerce")
+
+    for col in ["order_purchase_date", "order_delivered_date"]:
+        cleaned["orders"][col] = pd.to_datetime(cleaned["orders"][col], errors="coerce")
+
+    cleaned["reviews"]["review_date"] = pd.to_datetime(cleaned["reviews"]["review_date"], errors="coerce")
+    cleaned["activity"]["activity_date"] = pd.to_datetime(cleaned["activity"]["activity_date"], errors="coerce")
+
+    cleaned["orders"]["delivery_days_clean"] = (
+        cleaned["orders"]["order_delivered_date"] - cleaned["orders"]["order_purchase_date"]
+    ).dt.days
+
+    cleaned["orders"].loc[cleaned["orders"]["delivery_days_clean"] < 0, "delivery_days_clean"] = np.nan
+
+    return cleaned
+
+
+def build_order_fact(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    customers = data["customers"]
+    orders = data["orders"]
+    order_items = data["order_items"]
+    payments = data["payments"]
+    reviews = data["reviews"]
+
+    item_summary = (
+        order_items
+        .groupby("order_id")
+        .agg(
+            item_count=("order_item_id", "count"),
+            product_revenue=("price", "sum"),
+            freight_value=("freight_value", "sum"),
+            primary_category=("product_category", lambda x: x.mode().iloc[0] if not x.mode().empty else "Unknown"),
+        )
+        .reset_index()
+    )
+
+    fact = (
+        orders
+        .merge(customers, on="customer_id", how="left")
+        .merge(item_summary, on="order_id", how="left")
+        .merge(payments, on="order_id", how="left")
+        .merge(reviews[["order_id", "review_score"]], on="order_id", how="left")
+    )
+
+    fact["order_month"] = fact["order_purchase_date"].dt.to_period("M").astype(str)
+    fact["low_review"] = (fact["review_score"] <= 2).astype(int)
+    return fact
+
+
+def monthly_metrics(order_fact: pd.DataFrame) -> pd.DataFrame:
+    delivered = order_fact[order_fact["order_status"] == "delivered"].copy()
+
+    out = (
+        delivered
+        .groupby("order_month")
+        .agg(
+            revenue=("payment_value", "sum"),
+            orders=("order_id", "nunique"),
+            customers=("customer_id", "nunique"),
+            avg_order_value=("payment_value", "mean"),
+            avg_review_score=("review_score", "mean"),
+            avg_delivery_days=("delivery_days_clean", "mean"),
+            low_review_rate=("low_review", "mean"),
+        )
+        .reset_index()
+        .sort_values("order_month")
+    )
+
+    out["revenue_pct_change"] = out["revenue"].pct_change()
+    return out
+
+
+def metrics_by_channel(order_fact: pd.DataFrame) -> pd.DataFrame:
+    delivered = order_fact[order_fact["order_status"] == "delivered"].copy()
+
+    return (
+        delivered
+        .groupby("acquisition_channel")
+        .agg(
+            revenue=("payment_value", "sum"),
+            orders=("order_id", "nunique"),
+            customers=("customer_id", "nunique"),
+            avg_order_value=("payment_value", "mean"),
+            low_review_rate=("low_review", "mean"),
+        )
+        .reset_index()
+        .sort_values("revenue", ascending=False)
+    )
+
+
+def detect_revenue_drop(monthly_df: pd.DataFrame, threshold: float = 0.10) -> dict:
+    latest = monthly_df.sort_values("order_month").iloc[-1]
+
+    return {
+        "latest_month": latest["order_month"],
+        "latest_revenue": round(float(latest["revenue"]), 2),
+        "revenue_pct_change": round(float(latest["revenue_pct_change"]), 4),
+        "alert_threshold": -threshold,
+        "alert": bool(latest["revenue_pct_change"] <= -threshold),
+    }
+
+
+def logistic_model_template() -> str:
+    return """
+Optional modeling step for class:
+
+import statsmodels.formula.api as smf
+import numpy as np
+
+model_df = order_fact[
+    (order_fact["order_status"] == "delivered") &
+    order_fact["delivery_days_clean"].notna() &
+    order_fact["payment_value"].notna() &
+    order_fact["freight_value"].notna()
+].copy()
+
+model = smf.logit(
+    formula="low_review ~ delivery_days_clean + payment_value + freight_value",
+    data=model_df
+).fit()
+
+odds_ratios = np.exp(model.params)
+print(model.summary())
+print(odds_ratios)
+"""
+
+
+def build_alert_email(alert_payload: dict, channel_metrics: pd.DataFrame) -> str:
+    top_channel = channel_metrics.iloc[0]["acquisition_channel"]
+    pct = alert_payload["revenue_pct_change"] * 100
+
+    if alert_payload["alert"]:
+        subject = f"Revenue Drop Alert — {alert_payload['latest_month']}"
+        body = (
+            f"Revenue changed by {pct:.1f}% in {alert_payload['latest_month']}, "
+            f"crossing the alert threshold of {alert_payload['alert_threshold'] * 100:.0f}%.\n\n"
+            f"The highest-revenue acquisition channel is currently {top_channel}. "
+            "Recommended next step: review monthly revenue by channel and category, then check whether "
+            "delivery delays or low-review rates increased in the same period.\n\n"
+            "Note: this is a synthetic teaching dataset. In production, this email should include verified "
+            "dashboard links and owner assignments."
+        )
+    else:
+        subject = f"Revenue Monitoring Update — {alert_payload['latest_month']}"
+        body = (
+            f"No revenue-drop alert was triggered for {alert_payload['latest_month']}. "
+            f"Latest month-over-month revenue change was {pct:.1f}%."
+        )
+
+    return f"Subject: {subject}\n\n{body}"
+
+
+def main() -> None:
+    OUTPUT_DIR.mkdir(exist_ok=True)
+
+    raw = load_raw_data()
+    table_summary = data_reader_agent(raw)
+    quality_report = data_quality_agent(raw)
+    clean = clean_data(raw)
+    order_fact = build_order_fact(clean)
+    monthly = monthly_metrics(order_fact)
+    channels = metrics_by_channel(order_fact)
+    alert = detect_revenue_drop(monthly, threshold=0.10)
+    alert_email = build_alert_email(alert, channels)
+
+    monthly.to_csv(OUTPUT_DIR / "monthly_metrics.csv", index=False)
+    channels.to_csv(OUTPUT_DIR / "channel_metrics.csv", index=False)
+    order_fact.to_csv(OUTPUT_DIR / "order_fact.csv", index=False)
+
+    with open(OUTPUT_DIR / "table_summary.json", "w") as f:
+        json.dump(table_summary, f, indent=2, default=str)
+
+    with open(OUTPUT_DIR / "quality_report.json", "w") as f:
+        json.dump(quality_report, f, indent=2, default=str)
+
+    with open(OUTPUT_DIR / "alert_payload.json", "w") as f:
+        json.dump(alert, f, indent=2, default=str)
+
+    with open(OUTPUT_DIR / "alert_email.txt", "w") as f:
+        f.write(alert_email)
+
+    print("Workflow complete. Files written to outputs/")
+    print(alert_email)
+
+
+if __name__ == "__main__":
+    main()

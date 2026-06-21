@@ -1,0 +1,14 @@
+{
+  "customers_duplicate_rows": 5,
+  "customers_missing_age": 48,
+  "orders_missing_delivery_date": 241,
+  "orders_negative_delivery_days": 8,
+  "payments_zero_or_negative": 130,
+  "recommended_cleaning_rules": [
+    "Drop exact duplicate customer rows.",
+    "Convert all date fields to datetime.",
+    "Treat canceled orders separately from delivered orders.",
+    "Flag negative delivery days for data quality review.",
+    "Impute missing age with median only for demo analysis, and document the assumption."
+  ]
+}

@@ -1,0 +1,53 @@
+"""
+Optional: download the real Olist Brazilian E-Commerce public dataset from Kaggle.
+
+Requirements:
+1. Create a Kaggle account.
+2. Create an API token from Kaggle Account settings.
+3. Save kaggle.json to ~/.kaggle/kaggle.json.
+4. Run:
+   pip install kaggle
+   python scripts/download_olist_kaggle.py
+
+Note:
+- The teaching repo includes synthetic data so students can start without Kaggle setup.
+- Check Kaggle's dataset license before redistributing the full dataset.
+"""
+
+from pathlib import Path
+import subprocess
+import zipfile
+
+
+DATASET = "olistbr/brazilian-ecommerce"
+OUTPUT_DIR = Path("data/olist")
+
+
+def main() -> None:
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    subprocess.run(
+        [
+            "kaggle",
+            "datasets",
+            "download",
+            "-d",
+            DATASET,
+            "-p",
+            str(OUTPUT_DIR),
+        ],
+        check=True,
+    )
+
+    zip_files = list(OUTPUT_DIR.glob("*.zip"))
+    if not zip_files:
+        raise FileNotFoundError("No Kaggle zip file was downloaded.")
+
+    with zipfile.ZipFile(zip_files[0], "r") as zf:
+        zf.extractall(OUTPUT_DIR)
+
+    print(f"Olist data extracted to {OUTPUT_DIR.resolve()}")
+
+
+if __name__ == "__main__":
+    main()

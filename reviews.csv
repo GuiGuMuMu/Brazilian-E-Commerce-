@@ -1,0 +1,118 @@
+{
+  "customers": {
+    "table": "customers",
+    "rows": 1205,
+    "columns": 6,
+    "dtypes": {
+      "customer_id": "object",
+      "signup_date": "object",
+      "state": "object",
+      "acquisition_channel": "object",
+      "customer_segment": "object",
+      "age": "float64"
+    },
+    "missing": {
+      "customer_id": 0,
+      "signup_date": 0,
+      "state": 0,
+      "acquisition_channel": 0,
+      "customer_segment": 0,
+      "age": 48
+    },
+    "duplicate_rows": 5
+  },
+  "orders": {
+    "table": "orders",
+    "rows": 2600,
+    "columns": 6,
+    "dtypes": {
+      "order_id": "object",
+      "customer_id": "object",
+      "order_purchase_date": "object",
+      "order_status": "object",
+      "delivery_days": "int64",
+      "order_delivered_date": "object"
+    },
+    "missing": {
+      "order_id": 0,
+      "customer_id": 0,
+      "order_purchase_date": 0,
+      "order_status": 0,
+      "delivery_days": 0,
+      "order_delivered_date": 241
+    },
+    "duplicate_rows": 0
+  },
+  "order_items": {
+    "table": "order_items",
+    "rows": 5198,
+    "columns": 5,
+    "dtypes": {
+      "order_id": "object",
+      "order_item_id": "int64",
+      "product_category": "object",
+      "price": "float64",
+      "freight_value": "float64"
+    },
+    "missing": {
+      "order_id": 0,
+      "order_item_id": 0,
+      "product_category": 0,
+      "price": 0,
+      "freight_value": 0
+    },
+    "duplicate_rows": 0
+  },
+  "payments": {
+    "table": "payments",
+    "rows": 2600,
+    "columns": 4,
+    "dtypes": {
+      "order_id": "object",
+      "payment_type": "object",
+      "payment_installments": "int64",
+      "payment_value": "float64"
+    },
+    "missing": {
+      "order_id": 0,
+      "payment_type": 0,
+      "payment_installments": 0,
+      "payment_value": 0
+    },
+    "duplicate_rows": 0
+  },
+  "reviews": {
+    "table": "reviews",
+    "rows": 2600,
+    "columns": 3,
+    "dtypes": {
+      "order_id": "object",
+      "review_score": "int64",
+      "review_date": "object"
+    },
+    "missing": {
+      "order_id": 0,
+      "review_score": 0,
+      "review_date": 0
+    },
+    "duplicate_rows": 0
+  },
+  "activity": {
+    "table": "activity",
+    "rows": 8446,
+    "columns": 4,
+    "dtypes": {
+      "customer_id": "object",
+      "activity_date": "object",
+      "session_count": "int64",
+      "email_opened": "int64"
+    },
+    "missing": {
+      "customer_id": 0,
+      "activity_date": 0,
+      "session_count": 0,
+      "email_opened": 0
+    },
+    "duplicate_rows": 6
+  }
+}

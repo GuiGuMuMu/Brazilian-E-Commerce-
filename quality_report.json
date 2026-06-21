@@ -1,0 +1,164 @@
+"""
+Generate synthetic ecommerce data for the 90-minute
+AI Business Analytics Agent course.
+
+This data is intentionally synthetic so it can be safely uploaded to GitHub.
+It mimics a simplified version of an ecommerce analytics environment:
+customers, orders, order_items, payments, reviews, and activity logs.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+import numpy as np
+import pandas as pd
+
+
+def generate_synthetic_ecommerce_data(
+    output_dir: str | Path = "data/raw",
+    n_customers: int = 1200,
+    n_orders: int = 2600,
+    seed: int = 42,
+) -> None:
+    rng = np.random.default_rng(seed)
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    states = ["TX", "CA", "NY", "FL", "WA", "IL", "GA", "NC", "AZ", "CO"]
+    channels = ["Organic", "Paid Search", "Referral", "Social", "Email"]
+    segments = ["New", "Returning", "VIP"]
+    categories = ["Electronics", "Home", "Beauty", "Sports", "Books", "Fashion", "Grocery"]
+
+    customer_ids = [f"C{str(i).zfill(5)}" for i in range(1, n_customers + 1)]
+    signup_dates = pd.to_datetime("2024-01-01") + pd.to_timedelta(
+        rng.integers(0, 420, size=n_customers), unit="D"
+    )
+
+    customers = pd.DataFrame(
+        {
+            "customer_id": customer_ids,
+            "signup_date": signup_dates,
+            "state": rng.choice(states, size=n_customers, p=[.18,.16,.12,.10,.08,.08,.08,.08,.06,.06]),
+            "acquisition_channel": rng.choice(channels, size=n_customers, p=[.34,.24,.16,.14,.12]),
+            "customer_segment": rng.choice(segments, size=n_customers, p=[.58,.34,.08]),
+            "age": rng.normal(36, 10, size=n_customers).round().clip(18, 70),
+        }
+    )
+
+    missing_age_idx = rng.choice(customers.index, size=int(n_customers * 0.04), replace=False)
+    customers.loc[missing_age_idx, "age"] = np.nan
+
+    order_customer_ids = rng.choice(customer_ids, size=n_orders, replace=True)
+    purchase_dates = pd.to_datetime("2024-03-01") + pd.to_timedelta(
+        rng.integers(0, 470, size=n_orders), unit="D"
+    )
+    order_status = rng.choice(["delivered", "canceled", "processing"], size=n_orders, p=[.91, .05, .04])
+
+    orders = pd.DataFrame(
+        {
+            "order_id": [f"O{str(i).zfill(6)}" for i in range(1, n_orders + 1)],
+            "customer_id": order_customer_ids,
+            "order_purchase_date": purchase_dates,
+            "order_status": order_status,
+        }
+    )
+
+    base_delay = rng.poisson(5, size=n_orders)
+    seasonal_delay = np.where(pd.Series(purchase_dates).dt.month.isin([11, 12]), rng.poisson(3, size=n_orders), 0)
+    orders["delivery_days"] = (base_delay + seasonal_delay).clip(1, 30)
+    orders["order_delivered_date"] = orders["order_purchase_date"] + pd.to_timedelta(orders["delivery_days"], unit="D")
+    orders.loc[orders["order_status"] != "delivered", "order_delivered_date"] = pd.NaT
+
+    bad_idx = rng.choice(orders.index, size=8, replace=False)
+    orders.loc[bad_idx, "order_delivered_date"] = orders.loc[bad_idx, "order_purchase_date"] - pd.to_timedelta(2, unit="D")
+
+    item_rows = []
+    payment_rows = []
+    review_rows = []
+
+    for _, row in orders.iterrows():
+        n_items = int(rng.integers(1, 4))
+        subtotal = 0.0
+        freight_total = 0.0
+
+        for item_no in range(1, n_items + 1):
+            category = rng.choice(categories)
+            price = float(np.round(rng.lognormal(mean=3.5, sigma=0.55), 2))
+            if row["order_purchase_date"].month == 5 and category in ["Electronics", "Fashion"]:
+                price *= 0.82
+            freight = float(np.round(rng.uniform(3, 22), 2))
+            subtotal += price
+            freight_total += freight
+
+            item_rows.append(
+                {
+                    "order_id": row["order_id"],
+                    "order_item_id": item_no,
+                    "product_category": category,
+                    "price": round(price, 2),
+                    "freight_value": freight,
+                }
+            )
+
+        if row["order_status"] == "canceled":
+            payment_value = 0.0
+        else:
+            payment_value = round(subtotal + freight_total, 2)
+
+        payment_rows.append(
+            {
+                "order_id": row["order_id"],
+                "payment_type": rng.choice(["credit_card", "debit_card", "voucher", "paypal"], p=[.65,.12,.11,.12]),
+                "payment_installments": int(rng.integers(1, 7)),
+                "payment_value": payment_value,
+            }
+        )
+
+        low_review_logit = -2.2 + 0.16 * max(row["delivery_days"] - 5, 0)
+        if row["order_status"] == "canceled":
+            low_review_logit += 2.5
+        low_review_prob = 1 / (1 + np.exp(-low_review_logit))
+        is_low = rng.random() < low_review_prob
+        review_score = int(rng.choice([1, 2], p=[.55,.45]) if is_low else rng.choice([3, 4, 5], p=[.17,.35,.48]))
+
+        review_rows.append(
+            {
+                "order_id": row["order_id"],
+                "review_score": review_score,
+                "review_date": row["order_purchase_date"] + pd.to_timedelta(int(row["delivery_days"]) + 2, unit="D"),
+            }
+        )
+
+    order_items = pd.DataFrame(item_rows)
+    payments = pd.DataFrame(payment_rows)
+    reviews = pd.DataFrame(review_rows)
+
+    activity_rows = []
+    for cid, signup_date in zip(customers["customer_id"], customers["signup_date"]):
+        n_events = int(rng.poisson(7))
+        for _ in range(n_events):
+            day_offset = int(rng.integers(0, 500))
+            activity_rows.append(
+                {
+                    "customer_id": cid,
+                    "activity_date": signup_date + pd.to_timedelta(day_offset, unit="D"),
+                    "session_count": int(rng.integers(1, 8)),
+                    "email_opened": int(rng.random() < 0.32),
+                }
+            )
+    activity = pd.DataFrame(activity_rows)
+
+    customers = pd.concat([customers, customers.sample(5, random_state=seed)], ignore_index=True)
+
+    customers.to_csv(output_dir / "customers.csv", index=False)
+    orders.to_csv(output_dir / "orders.csv", index=False)
+    order_items.to_csv(output_dir / "order_items.csv", index=False)
+    payments.to_csv(output_dir / "payments.csv", index=False)
+    reviews.to_csv(output_dir / "reviews.csv", index=False)
+    activity.to_csv(output_dir / "activity.csv", index=False)
+
+    print(f"Synthetic data written to {output_dir.resolve()}")
+
+
+if __name__ == "__main__":
+    generate_synthetic_ecommerce_data()
