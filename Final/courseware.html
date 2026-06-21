@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Business Analytics Agent Workflow — Dense Courseware</title>
+<style>
+:root {
+  --bg:      #07101c;
+  --bg2:     #0c1728;
+  --panel:   #0f1c31;
+  --panel2:  #14233c;
+  --text:    #eef4ff;
+  --muted:   #7f94b0;
+  --muted2:  #a9b8cc;
+  --line:    rgba(255,255,255,.1);
+  --accent:  #67efc0;
+  --accent2: #88a7ff;
+  --accent3: #ffd36e;
+  --danger:  #ff8f9f;
+  --ok:      #8ae3ff;
+  --teacher: #c084fc;
+  --radius:  16px;
+  --shadow:  0 16px 48px rgba(0,0,0,.32);
+  --mono:    ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans:    Inter, "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  color: var(--text);
+  background:
+    radial-gradient(circle at 0% 0%,   rgba(104,167,255,.15) 0%, transparent 32%),
+    radial-gradient(circle at 100% 3%,  rgba(103,239,192,.11) 0%, transparent 26%),
+    linear-gradient(180deg, #07101c 0%, #080f1c 50%, #050a12 100%);
+  line-height: 1.5;
+  font-size: 15px;
+}
+a { color: inherit; text-decoration: none; }
+
+/* ── Scroll progress ── */
+#progress {
+  position: fixed; top: 0; left: 0; z-index: 9999;
+  height: 3px; width: 0;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  transition: width .1s linear;
+}
+
+/* ── Layout ── */
+.shell { display: grid; grid-template-columns: 280px minmax(0,1fr); min-height: 100vh; }
+
+/* ── Sidebar ── */
+aside {
+  position: sticky; top: 0; height: 100vh; overflow-y: auto; overflow-x: hidden;
+  padding: 20px 14px; border-right: 1px solid var(--line);
+  background: rgba(7,16,28,.88); backdrop-filter: blur(18px);
+  scrollbar-width: thin; scrollbar-color: var(--line) transparent;
+}
+aside::-webkit-scrollbar { width: 4px; }
+aside::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+
+.brand { display: flex; gap: 11px; align-items: center; margin-bottom: 20px; }
+.mark {
+  width: 40px; height: 40px; border-radius: 13px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  box-shadow: 0 8px 24px rgba(103,239,192,.2);
+}
+.brand b  { display: block; font-size: 13px; line-height: 1.3; }
+.brand em { display: block; color: var(--muted); font-size: 11px; font-style: normal; }
+
+.nav-label { margin: 16px 0 5px; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); padding-left: 8px; }
+
+.nav a {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 9px; border-radius: 11px; font-size: 12.5px;
+  color: var(--muted2); border: 1px solid transparent;
+  transition: all .15s;
+}
+.nav a:hover { background: rgba(255,255,255,.05); color: var(--text); border-color: var(--line); }
+.nav a.active { background: rgba(103,239,192,.1); color: var(--accent); border-color: rgba(103,239,192,.2); }
+.nav .num { font-family: var(--mono); color: var(--accent); font-size: 10.5px; min-width: 20px; }
+
+.side-card {
+  margin-top: 14px; padding: 13px; border: 1px solid var(--line);
+  border-radius: 13px; background: rgba(255,255,255,.04);
+}
+.side-card b { display: block; font-size: 12.5px; margin-bottom: 6px; }
+.side-card p { font-size: 11.5px; color: var(--muted2); line-height: 1.55; margin-top: 5px; }
+.side-card p + p { margin-top: 5px; }
+.cn { color: var(--accent3); font-size: 11px; }
+
+/* ── Main ── */
+main { min-width: 0; }
+
+section {
+  padding: 36px clamp(22px, 4vw, 52px);
+  border-bottom: 1px solid var(--line);
+  opacity: 0; transform: translateY(14px);
+  transition: opacity .4s ease, transform .4s ease;
+}
+section.visible { opacity: 1; transform: translateY(0); }
+
+.hero { padding: 52px clamp(22px, 4vw, 52px) 36px; }
+
+/* ── Typography ── */
+.eyebrow, .kicker {
+  font-size: 10.5px; letter-spacing: .18em; font-weight: 800;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 11px; display: block;
+}
+h1 {
+  font-size: clamp(38px, 5.5vw, 68px); line-height: .95; letter-spacing: -.05em;
+  max-width: 960px; margin-bottom: 16px;
+}
+h2 {
+  font-size: clamp(26px, 3.4vw, 44px); line-height: 1.04; letter-spacing: -.035em;
+  margin-bottom: 12px;
+}
+h3 { font-size: 17px; margin-bottom: 8px; }
+h4 { font-size: 14px; margin-bottom: 6px; color: #d0ddf0; }
+
+.lead { font-size: 17px; color: #cad5e8; max-width: 920px; line-height: 1.6; }
+.sub  { font-size: 15.5px; color: #b8c7dc; max-width: 980px; margin-bottom: 20px; line-height: 1.6; }
+
+/* ── Cards ── */
+.card {
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.028));
+  transition: border-color .2s;
+}
+.card:hover { border-color: rgba(255,255,255,.18); }
+.card.pad { padding: 18px; }
+
+/* ── Grid helpers ── */
+.grid { display: grid; gap: 13px; }
+.g2 { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.g3 { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.g4 { grid-template-columns: repeat(4,minmax(0,1fr)); }
+.quick-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; margin-top: 18px; }
+.matrix    { display: grid; grid-template-columns: 1.1fr .9fr; gap: 14px; }
+
+/* ── Mini card ── */
+.mini {
+  padding: 13px; border: 1px solid var(--line); border-radius: 13px;
+  background: rgba(255,255,255,.035);
+}
+.mini b    { display: block; font-size: 12.5px; margin-bottom: 5px; color: var(--text); }
+.mini span, .mini li, .mini p { color: var(--muted2); font-size: 12.5px; }
+.mini ul, .mini ol { padding-left: 17px; margin-top: 5px; }
+.mini li { margin-bottom: 4px; }
+
+/* ── Pills ── */
+.pills { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+.pill  {
+  padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line);
+  font-size: 11.5px; color: #c8d8ef; background: rgba(255,255,255,.04);
+}
+
+/* ── Buttons ── */
+.cta { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 14px; }
+.btn {
+  padding: 10px 14px; border-radius: 11px; border: 1px solid var(--line);
+  font-weight: 700; font-size: 13px; cursor: pointer; transition: opacity .15s;
+}
+.btn:hover { opacity: .82; }
+.btn.primary { background: var(--accent); color: #05131a; border-color: transparent; }
+.btn.ghost   { background: rgba(255,255,255,.05); color: var(--text); }
+
+/* ── Table ── */
+.tbl { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.tr  { display: grid; border-top: 1px solid var(--line); }
+.tr:first-child { border-top: none; }
+.td  { padding: 9px 12px; font-size: 12.5px; }
+.tr.col3 { grid-template-columns: 90px 160px 1fr; }
+.tr.col2 { grid-template-columns: 140px 1fr; }
+.tr.col2 .td:first-child { background: rgba(255,255,255,.04); font-weight: 600; color: var(--text); }
+.tr.col2 .td:last-child  { color: var(--muted2); }
+.tr.col3 .td:first-child, .tr.col3 .td:nth-child(2) { background: rgba(255,255,255,.035); font-family: var(--mono); font-size: 11.5px; }
+.tr.col3 .td:last-child { color: var(--muted2); }
+
+/* ── Code ── */
+.code {
+  position: relative; border: 1px solid var(--line); border-radius: 13px;
+  background: #05101c; padding: 14px 14px 14px; overflow-x: auto;
+}
+.code pre {
+  margin: 0; white-space: pre; color: #d0dce8;
+  font: 12.5px/1.6 var(--mono);
+}
+.code-label {
+  position: absolute; top: 9px; right: 10px;
+  font: 10.5px var(--mono); color: var(--muted); pointer-events: none;
+}
+.copy-btn {
+  position: absolute; top: 8px; right: 10px;
+  padding: 3px 8px; border-radius: 7px; border: 1px solid var(--line);
+  background: rgba(255,255,255,.06); color: var(--muted2); font: 11px var(--mono);
+  cursor: pointer; transition: all .15s; opacity: 0;
+}
+.code:hover .copy-btn { opacity: 1; }
+.copy-btn:hover { background: rgba(103,239,192,.15); color: var(--accent); border-color: rgba(103,239,192,.3); }
+.copy-btn.copied { color: var(--accent); border-color: rgba(103,239,192,.35); }
+
+/* Syntax tokens */
+.kw  { color: #88a7ff; }
+.fn  { color: #67efc0; }
+.str { color: #ffd36e; }
+.cm  { color: #4d6070; font-style: italic; }
+.num { color: #8ae3ff; }
+.bi  { color: #f4a4b8; }
+.op  { color: #a8c0d0; }
+
+/* ── Callouts ── */
+.note {
+  padding: 11px 14px; border-left: 3px solid var(--accent);
+  background: rgba(103,239,192,.07); border-radius: 10px;
+  color: #d8fbf1; font-size: 13.5px; line-height: 1.55;
+}
+.warn {
+  padding: 11px 14px; border-left: 3px solid var(--danger);
+  background: rgba(255,143,159,.07); border-radius: 10px;
+  color: #ffe8ed; font-size: 13.5px; line-height: 1.55;
+}
+.teacher {
+  padding: 11px 14px; border-left: 3px solid var(--teacher);
+  background: rgba(192,132,252,.07); border-radius: 10px;
+  color: #f0deff; font-size: 13px; line-height: 1.55;
+}
+.teacher::before {
+  content: "🎓 Teacher note: ";
+  font-weight: 700; color: var(--teacher);
+}
+.anti {
+  padding: 11px 14px; border-left: 3px solid var(--accent3);
+  background: rgba(255,211,110,.07); border-radius: 10px;
+  color: #fff8e0; font-size: 13px; line-height: 1.55;
+}
+.anti::before {
+  content: "⚠ Anti-pattern: ";
+  font-weight: 700; color: var(--accent3);
+}
+
+/* ── Quality badge ── */
+.q-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 14px; border-radius: 999px; border: 1px solid rgba(103,239,192,.3);
+  background: rgba(103,239,192,.1); margin-bottom: 12px;
+}
+.q-score { font-size: 22px; font-weight: 900; color: var(--accent); font-family: var(--mono); }
+.q-label { font-size: 12px; color: var(--muted2); }
+
+/* ── Flow diagram ── */
+.flow-wrap { overflow-x: auto; padding-bottom: 6px; }
+.flow-h {
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(160px,1fr);
+  gap: 0; align-items: center; min-width: 1020px;
+}
+.step {
+  padding: 13px; border-radius: 14px;
+  background: rgba(255,255,255,.048); border: 1px solid var(--line);
+  min-height: 110px; transition: border-color .2s, background .2s;
+}
+.step:hover { border-color: rgba(103,239,192,.3); background: rgba(103,239,192,.04); }
+.step .sid { font-family: var(--mono); font-size: 10.5px; color: var(--accent3); display: block; margin-bottom: 7px; }
+.step b    { display: block; font-size: 13.5px; margin-bottom: 5px; }
+.step p    { font-size: 12px; color: var(--muted2); line-height: 1.48; }
+
+.arr {
+  display: grid; place-items: center; color: var(--accent2); font-size: 18px;
+  padding: 0 2px; flex-shrink: 0;
+}
+
+/* ── Agent expandable ── */
+.agent {
+  margin-top: 11px; border: 1px solid var(--line); border-radius: 16px;
+  overflow: hidden; background: rgba(255,255,255,.036);
+  transition: border-color .2s;
+}
+.agent[open] { border-color: rgba(103,239,192,.25); }
+.agent summary {
+  list-style: none; cursor: pointer;
+  padding: 15px 17px; display: grid; grid-template-columns: 56px 1fr 26px; gap: 13px; align-items: center;
+  user-select: none;
+}
+.agent summary::-webkit-details-marker { display: none; }
+.agent summary:hover { background: rgba(255,255,255,.03); }
+
+.agent .idx {
+  display: grid; place-items: center; height: 44px; border-radius: 12px;
+  font-weight: 900; font-size: 15px; font-family: var(--mono); color: #07111b;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+}
+.agent summary h3 { font-size: 17px; margin: 0; }
+.agent summary p  { margin: 4px 0 0; color: var(--muted2); font-size: 13px; }
+.chev { font-size: 20px; color: var(--accent); transition: transform .2s; text-align: center; }
+.agent[open] .chev { transform: rotate(45deg); }
+
+.agent-body  { padding: 0 17px 17px; }
+.agent-grid  { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 9px; margin-bottom: 13px; }
+
+/* ── EDA checklist ── */
+.checklist { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+.check { padding: 13px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.04); }
+.check h4 { margin-bottom: 8px; }
+.check ol  { padding-left: 16px; color: var(--muted2); font-size: 12.5px; }
+.check li  { margin-bottom: 4px; }
+
+/* ── Chart card ── */
+.chart-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin-top: 14px; }
+.chart-card {
+  padding: 13px; border: 1px solid var(--line); border-radius: 14px;
+  background: rgba(255,255,255,.04);
+}
+.chart-card h4 { margin-bottom: 8px; }
+.chart-card p, .chart-card li { color: var(--muted2); font-size: 12.5px; }
+.chart-card ul { padding-left: 16px; margin-top: 7px; }
+
+.chart-swatch {
+  height: 110px; border-radius: 11px; border: 1px dashed rgba(255,255,255,.13);
+  background: linear-gradient(160deg,rgba(136,167,255,.055),rgba(103,239,192,.025));
+  margin-bottom: 10px; overflow: hidden; position: relative;
+}
+
+/* ── Before/After table ── */
+.ba-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin-top: 10px; }
+.ba-cell { padding: 11px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.04); text-align: center; }
+.ba-cell .label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 6px; }
+.ba-cell .before { font-size: 20px; font-weight: 700; font-family: var(--mono); color: var(--danger); }
+.ba-cell .after  { font-size: 20px; font-weight: 700; font-family: var(--mono); color: var(--accent); }
+.ba-cell .arrow  { color: var(--muted); font-size: 14px; margin: 2px 0; }
+.ba-cell .note   { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+/* ── Prompt block ── */
+.prompt-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 13px; }
+.prompt-card { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.prompt-card .ph {
+  padding: 10px 14px; border-bottom: 1px solid var(--line);
+  background: rgba(255,255,255,.04); display: flex; align-items: center; gap: 8px;
+}
+.prompt-card .ph b { font-size: 13px; }
+.prompt-card .ph .tag { font-size: 10px; padding: 2px 7px; border-radius: 999px; background: rgba(103,239,192,.1); color: var(--accent); border: 1px solid rgba(103,239,192,.2); }
+.prompt-card .code { border-radius: 0; border: none; border-top: none; }
+
+/* ── Expand all btn ── */
+.expand-btn {
+  padding: 7px 13px; border-radius: 10px; border: 1px solid var(--line);
+  background: rgba(255,255,255,.05); color: var(--muted2); font-size: 12.5px;
+  cursor: pointer; transition: all .15s; font-family: var(--sans);
+}
+.expand-btn:hover { border-color: rgba(103,239,192,.3); color: var(--accent); }
+
+/* ── Footer ── */
+footer {
+  padding: 22px clamp(22px,4vw,52px); font-size: 12.5px; color: var(--muted);
+  border-top: 1px solid var(--line);
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+}
+
+/* ── VP Message ── */
+.vp-msg {
+  border: 1px solid rgba(255,143,159,.3); background: rgba(255,143,159,.05);
+  border-radius: 13px; padding: 15px 17px; margin-bottom: 22px;
+}
+.vp-msg .vp-meta { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-bottom: 7px; }
+.vp-msg .vp-subject { font-size: 15px; font-weight: 700; color: #ffccd3; margin-bottom: 8px; }
+.vp-msg .vp-body { font-size: 13.5px; color: var(--muted2); line-height: 1.6; }
+
+/* ── Mantra banner ── */
+.mantra-bar {
+  display: flex; flex-wrap: wrap; border: 1px solid var(--line);
+  border-radius: 13px; overflow: hidden; margin: 20px 0;
+}
+.mantra-item {
+  flex: 1; min-width: 170px; padding: 11px 14px;
+  border-right: 1px solid var(--line); background: rgba(255,255,255,.03);
+}
+.mantra-item:last-child { border-right: none; }
+.mantra-item .mn { font-size: 9.5px; color: var(--accent); text-transform: uppercase; letter-spacing: .13em; margin-bottom: 5px; font-weight: 700; }
+.mantra-item p { font-size: 12.5px; color: var(--muted2); margin: 0; line-height: 1.45; }
+.mantra-item strong { color: var(--text); }
+
+/* ── Checkpoint card ── */
+.checkpoint {
+  border: 1px solid rgba(255,211,110,.22); background: rgba(255,211,110,.04);
+  border-radius: 13px; margin-top: 14px; overflow: hidden;
+}
+.checkpoint .cp-hd {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-bottom: 1px solid rgba(255,211,110,.14);
+  background: rgba(255,211,110,.06);
+}
+.checkpoint .cp-num {
+  display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px;
+  background: var(--accent3); color: #1a1000; font-weight: 900; font-size: 12px;
+  font-family: var(--mono); flex-shrink: 0;
+}
+.checkpoint .cp-title { font-weight: 700; font-size: 13px; color: #fff5cc; }
+.checkpoint .cp-time  { margin-left: auto; font-size: 11px; color: var(--accent3); font-family: var(--mono); white-space: nowrap; }
+.checkpoint .cp-bd    { padding: 13px 14px; }
+.checkpoint .cp-q     { font-size: 13.5px; color: var(--text); margin-bottom: 10px; font-weight: 600; line-height: 1.5; }
+.cp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 10px; }
+.cp-blank {
+  border: 1px dashed rgba(255,211,110,.28); border-radius: 9px;
+  padding: 10px 12px; min-height: 56px; color: var(--muted);
+  font-size: 12.5px; font-style: italic; background: rgba(255,211,110,.02);
+  line-height: 1.7;
+}
+.cp-tip {
+  padding: 8px 11px; border-radius: 8px; background: rgba(255,211,110,.07);
+  font-size: 12px; color: #e8c97a; line-height: 1.55;
+}
+
+/* ── Bad vs Good split ── */
+.bg-split {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  border: 1px solid var(--line); border-radius: 13px; overflow: hidden;
+}
+.bg-col.bad  { border-right: 1px solid var(--line); }
+.bg-col .bg-lbl {
+  padding: 8px 13px; font-size: 11px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+}
+.bg-col.bad  .bg-lbl { background: rgba(255,143,159,.1); color: var(--danger); border-bottom: 1px solid rgba(255,143,159,.18); }
+.bg-col.good .bg-lbl { background: rgba(103,239,192,.07); color: var(--accent); border-bottom: 1px solid rgba(103,239,192,.14); }
+.bg-col .bg-body { padding: 13px; font-size: 13px; line-height: 1.65; }
+.bg-col.bad  .bg-body { color: #ffccd3; }
+.bg-col.good .bg-body { color: #c8faea; }
+.bg-col .bg-verdict { padding: 7px 13px; font-size: 11.5px; border-top: 1px solid var(--line); }
+.bg-col.bad  .bg-verdict { color: var(--danger); background: rgba(255,143,159,.05); }
+.bg-col.good .bg-verdict { color: var(--accent); background: rgba(103,239,192,.05); }
+.bg-num { font-size: 22px; font-weight: 900; font-family: var(--mono); display: block; margin-top: 6px; }
+
+/* ── Sample output table ── */
+.out-preview {
+  border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-top: 12px;
+}
+.out-preview .op-hd {
+  padding: 7px 12px; background: rgba(255,255,255,.04);
+  border-bottom: 1px solid var(--line);
+  font-size: 11px; color: var(--muted); font-family: var(--mono);
+}
+.out-preview .op-hd span { color: var(--accent); font-weight: 700; }
+.out-preview table { width: 100%; border-collapse: collapse; font: 11.5px/1.4 var(--mono); overflow-x: auto; display: block; }
+.out-preview th { padding: 6px 10px; background: rgba(255,255,255,.04); color: var(--muted2); font-weight: 600; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+.out-preview th:first-child { text-align: left; }
+.out-preview td { padding: 5px 10px; border-bottom: 1px solid rgba(255,255,255,.04); color: #cdd8e8; text-align: right; white-space: nowrap; }
+.out-preview td:first-child { text-align: left; color: var(--muted2); }
+.out-preview tr:last-child td { border-bottom: none; }
+.out-preview .alert-row td { background: rgba(255,143,159,.06); }
+.out-preview .alert-row td:first-child { color: #ffb3be; }
+.up  { color: var(--accent) !important; }
+.dn  { color: var(--danger) !important; }
+.nu  { color: var(--muted)  !important; }
+
+/* ── Artifacts tracker ── */
+.artifacts {
+  display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 9px; margin-top: 12px;
+}
+.artifact {
+  padding: 11px 12px; border: 1px solid var(--line); border-radius: 11px;
+  background: rgba(255,255,255,.038);
+}
+.artifact .a-n { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-bottom: 5px; display: block; }
+.artifact b { display: block; font-size: 12.5px; margin-bottom: 3px; }
+.artifact span { font-size: 11px; color: var(--muted2); }
+
+/* ── Responsive additions ── */
+@media (max-width: 700px) {
+  .bg-split { grid-template-columns: 1fr; }
+  .bg-col.bad { border-right: none; border-bottom: 1px solid var(--line); }
+  .bg-col.good .bg-lbl, .bg-col.good .bg-body, .bg-col.good .bg-verdict { border-left: none; }
+  .cp-row { grid-template-columns: 1fr; }
+  .artifacts { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .mantra-item { min-width: 140px; }
+}
+
+/* ── Responsive ── */
+@media (max-width: 1080px) {
+  .shell { display: block; }
+  aside  { position: relative; height: auto; }
+  .quick-grid, .matrix, .g2, .g3, .g4, .chart-grid,
+  .checklist, .agent-grid, .prompt-grid, .ba-grid { grid-template-columns: 1fr !important; }
+  .flow-h { min-width: 740px; }
+}
+
+@media print {
+  #progress, .copy-btn, .expand-btn { display: none !important; }
+  aside { display: none; }
+  .shell { display: block; }
+  section { opacity: 1 !important; transform: none !important; break-inside: avoid; }
+  .agent { break-inside: avoid; }
+  body { background: white; color: #111; }
+}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<div class="shell">
+
+<!-- ─────────────────── SIDEBAR ─────────────────── -->
+<aside>
+  <div class="brand">
+    <div class="mark"></div>
+    <div>
+      <b>AI Analytics Agent</b>
+      <em>Dense courseware · 90-min 1:1</em>
+    </div>
+  </div>
+
+  <div class="nav-label">Sections</div>
+  <nav class="nav" id="sidebar-nav">
+    <a href="#positioning"><span class="num">01</span> Positioning</a>
+    <a href="#architecture"><span class="num">02</span> Architecture</a>
+    <a href="#schedule"><span class="num">03</span> 90-min plan</a>
+    <a href="#agents"><span class="num">04</span> Agent deep dives</a>
+    <a href="#eda"><span class="num">05</span> EDA template</a>
+    <a href="#model"><span class="num">06</span> Statistics / model</a>
+    <a href="#alerts"><span class="num">07</span> Viz + alerting</a>
+    <a href="#data"><span class="num">08</span> Data design</a>
+    <a href="#prompts"><span class="num">09</span> Prompt templates</a>
+    <a href="#deliverable"><span class="num">10</span> Deliverable</a>
+  </nav>
+
+  <div class="side-card">
+    <b>Teaching principle</b>
+    <p><strong>AI plans.</strong> Python verifies. Human decides.</p>
+    <p class="cn">中文提示：不要跟 agent 讲"AI 自动帮你做一切"，而是讲"可控的分析流程模型"。</p>
+  </div>
+
+  <div class="side-card">
+    <b>Business use case</b>
+    <p>Revenue dropped this month. Diagnose the driver, validate the evidence, visualize the story, draft the alert.</p>
+  </div>
+
+  <div class="side-card">
+    <b>Student profile</b>
+    <p>Data analytics major · 2 years experience · Knows pandas · First time building a <em>disciplined</em> workflow.</p>
+  </div>
+</aside>
+
+<!-- ─────────────────── MAIN ─────────────────── -->
+<main>
+
+<!-- 01 HERO / POSITIONING -->
+<section class="hero" id="positioning">
+  <div class="vp-msg">
+    <div class="vp-meta">📧 From: VP of Analytics · Slack · 09:14 AM · Revenue Operations</div>
+    <div class="vp-subject">Revenue is down. I need to know why by EOD.</div>
+    <div class="vp-body">Monthly revenue for June came in below forecast. Before I get on a call with the CEO this afternoon, I need a <strong>defensible answer</strong> — not a guess. What's driving it? Which segment? Is it a data issue or a real business issue? I need numbers I can stand behind. You have 90 minutes.</div>
+  </div>
+  <div class="eyebrow">Business investigation case · 90-minute one-on-one</div>
+  <h1>You are the AI-enabled analyst. <span style="color:var(--accent)">Diagnose the drop.</span></h1>
+  <p class="lead" style="margin-top:14px">
+    This course teaches <strong>analytics system design</strong> — how to decompose a real business problem into constrained agents, verified metric logic, concrete EDA, interpretable statistics, and operational alerting. The student already knows pandas. What they don't know is how to <em>defend</em> their numbers.
+  </p>
+  <div class="pills">
+    <div class="pill">Workflow design</div>
+    <div class="pill">Metric contracts</div>
+    <div class="pill">Data quality scoring</div>
+    <div class="pill">EDA template</div>
+    <div class="pill">Logistic regression</div>
+    <div class="pill">Alert drafting</div>
+    <div class="pill">AI guardrails</div>
+  </div>
+
+  <div class="mantra-bar">
+    <div class="mantra-item">
+      <div class="mn">01 · Metric</div>
+      <p><strong>Before coding,</strong> define the contract.</p>
+    </div>
+    <div class="mantra-item">
+      <div class="mn">02 · Join</div>
+      <p><strong>Before joining,</strong> define the grain.</p>
+    </div>
+    <div class="mantra-item">
+      <div class="mn">03 · Quality</div>
+      <p><strong>Before trusting,</strong> score it 0–100.</p>
+    </div>
+    <div class="mantra-item">
+      <div class="mn">04 · Model</div>
+      <p><strong>Before modeling,</strong> do structured EDA.</p>
+    </div>
+    <div class="mantra-item">
+      <div class="mn">05 · Alert</div>
+      <p><strong>Before sending,</strong> require human review.</p>
+    </div>
+  </div>
+
+  <div class="quick-grid">
+    <div class="card pad">
+      <h3>What this class <em>is</em></h3>
+      <div class="grid g2" style="margin-top:10px">
+        <div class="mini"><b>Analytics system design</b><span>Each agent has a contract: role, input, output, failure mode. The student designs the system, not just the code.</span></div>
+        <div class="mini"><b>Metric contract thinking</b><span>Define grain, numerator, denominator, period, and threshold before writing any code.</span></div>
+        <div class="mini"><b>Data quality as a number</b><span>Quality is not "looks okay" — it's a 0–100 score with business-impact labels for each issue.</span></div>
+        <div class="mini"><b>Evidence-based insights</b><span>Every sentence in the business summary must trace back to a verified Python output.</span></div>
+      </div>
+    </div>
+    <div class="card pad">
+      <h3>What this class is <em>not</em></h3>
+      <div class="mini" style="margin-top:10px">
+        <ul>
+          <li>A generic pandas tutorial — they already know pandas</li>
+          <li>An LLM hype session with vague "build agents" talk</li>
+          <li>A black-box ML course with complex pipelines</li>
+          <li>An auto-email bot with no human checkpoint</li>
+          <li>A course where the student watches you code</li>
+        </ul>
+      </div>
+      <div class="cta">
+        <a class="btn primary" href="#eda">Jump to EDA Template →</a>
+        <a class="btn ghost" href="#agents">See Agent Deep Dives</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 ARCHITECTURE -->
+<section id="architecture">
+  <div class="kicker">System architecture</div>
+  <h2>One business question. Seven constrained steps.</h2>
+  <p class="sub">The course should show that "build agents" means decomposing work into <strong>framing → understanding → quality → metrics → statistics → communication → action</strong>. Each step produces an artifact the next step consumes.</p>
+
+  <div class="card" style="padding:18px">
+    <div class="flow-wrap">
+      <div class="flow-h">
+        <div class="step"><span class="sid">A1</span><b>Business Question</b><p>Translate "revenue is down" into metric contract, window, breakdowns, threshold.</p></div>
+        <div class="arr">→</div>
+        <div class="step"><span class="sid">A2</span><b>Data Reader</b><p>Inspect schema, grain, keys, date range, join risks.</p></div>
+        <div class="arr">→</div>
+        <div class="step"><span class="sid">A3</span><b>Join / Manipulation</b><p>Build fact table at stable grain without row duplication.</p></div>
+        <div class="arr">→</div>
+        <div class="step"><span class="sid">A4</span><b>Data Quality</b><p>Quality score 0–100, issues with business impact, cleaning log.</p></div>
+        <div class="arr">→</div>
+        <div class="step"><span class="sid">A5</span><b>Metric + EDA</b><p>Compute metrics and inspect time, segment, distribution, anomaly.</p></div>
+        <div class="arr">→</div>
+        <div class="step"><span class="sid">A6</span><b>Statistics</b><p>Logistic regression. Coefficients, odds ratios, p-values, caveat.</p></div>
+        <div class="arr">→</div>
+        <div class="step"><span class="sid">A7</span><b>Insight / Alert</b><p>Business summary, 3 charts, threshold check, email draft.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="matrix" style="margin-top:13px">
+    <div class="card pad">
+      <h3>Input → Output map</h3>
+      <div class="tbl" style="margin-top:10px">
+        <div class="tr col2"><div class="td">Raw input</div><div class="td">orders, payments, items, customers, reviews, activity</div></div>
+        <div class="tr col2"><div class="td">Intermediate</div><div class="td">schema summary, join map, fact table, quality report, cleaning impact, model frame</div></div>
+        <div class="tr col2"><div class="td">Final outputs</div><div class="td">monthly metrics, segment metrics, odds ratios, charts, alert payload, email draft</div></div>
+        <div class="tr col2"><div class="td">Human checkpoints</div><div class="td">metric definitions, cleaning assumptions, model interpretation, email approval</div></div>
+      </div>
+    </div>
+    <div class="card pad">
+      <h3>Non-negotiable guardrails</h3>
+      <div class="mini" style="margin-top:10px">
+        <ul>
+          <li>LLM cannot invent or calculate business metrics.</li>
+          <li>Every number in the insight must exist in Python output.</li>
+          <li>Every join step must log row counts before and after.</li>
+          <li>Every cleaning rule must be documented as an assumption.</li>
+          <li>Every alert remains a draft until human-approved.</li>
+        </ul>
+      </div>
+      <div class="note" style="margin-top:11px">This framing makes the class feel <strong>senior</strong>: the student learns control, auditability, and workflow design — not just syntax.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 SCHEDULE -->
+<section id="schedule">
+  <div class="kicker">Run of show</div>
+  <h2>Dense 90-minute agenda.</h2>
+  <p class="sub">Each module must answer: <em>why does this step exist, what is its contract, and what is the smallest proof-of-concept we can show?</em> Skip anything the student already owns.</p>
+  <div class="card pad">
+    <div class="tbl">
+      <div class="tr col3"><div class="td">0–8</div><div class="td">Positioning</div><div class="td">Course framing, what it is not, business use case, workflow map. Set the tone: you are designing a system.</div></div>
+      <div class="tr col3"><div class="td">8–15</div><div class="td">Business Question</div><div class="td">Define revenue, period, threshold, breakdowns, and analytic success criteria. No code yet.</div></div>
+      <div class="tr col3"><div class="td">15–23</div><div class="td">Data Reader</div><div class="td">Inspect tables, grain, keys, date coverage. Ask: "what does one row represent?"</div></div>
+      <div class="tr col3"><div class="td">23–32</div><div class="td">Join + Quality</div><div class="td">Build fact table. Run quality agent. Show quality score. Show cleaning impact before/after.</div></div>
+      <div class="tr col3"><div class="td">32–52</div><div class="td">Metric + EDA</div><div class="td">Walk through all 6 EDA blocks: structure, univariate, time, segment, bivariate, cohort-like.</div></div>
+      <div class="tr col3"><div class="td">52–68</div><div class="td">Statistics</div><div class="td">Logistic regression. Coefficient sign → odds ratio → p-value → plain English. Discuss causation limitation.</div></div>
+      <div class="tr col3"><div class="td">68–80</div><div class="td">Insight + Viz</div><div class="td">Convert verified outputs into business story. Generate 3 charts. Ask: "what question does each chart answer?"</div></div>
+      <div class="tr col3"><div class="td">80–88</div><div class="td">Alert</div><div class="td">Threshold check, alert payload, email draft. Student writes the email first, then compare to generated draft.</div></div>
+      <div class="tr col3"><div class="td">88–90</div><div class="td">Wrap-up</div><div class="td">Reinforce the mantra. Ask: "what would you do differently in your current job?"</div></div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:22px;margin-bottom:11px">8 artifacts you'll produce this class</h3>
+  <div class="artifacts">
+    <div class="artifact"><span class="a-n">Artifact 01</span><b>Metric Contract</b><span>Business question → measurable definition</span></div>
+    <div class="artifact"><span class="a-n">Artifact 02</span><b>Schema Summary</b><span>Table rows, dtypes, nulls, date coverage</span></div>
+    <div class="artifact"><span class="a-n">Artifact 03</span><b>Order Fact Table</b><span>Joined, grain-stable, delivery days clean</span></div>
+    <div class="artifact"><span class="a-n">Artifact 04</span><b>Quality Report</b><span>0–100 score + 7 categorized issues</span></div>
+    <div class="artifact"><span class="a-n">Artifact 05</span><b>EDA Pack</b><span>6 structured outputs + hypothesis list</span></div>
+    <div class="artifact"><span class="a-n">Artifact 06</span><b>Model Result</b><span>Odds ratios, p-values, plain-English read</span></div>
+    <div class="artifact"><span class="a-n">Artifact 07</span><b>Executive Summary</b><span>Verified insight in ≤ 140 words</span></div>
+    <div class="artifact"><span class="a-n">Artifact 08</span><b>Alert Email Draft</b><span>Python-verified numbers, human-approved</span></div>
+  </div>
+</section>
+
+<!-- 04 AGENT DEEP DIVES -->
+<section id="agents">
+  <div class="kicker">Agent deep dives</div>
+  <h2>Double-click each module.</h2>
+  <p class="sub" style="margin-bottom:12px">Each agent has a role, an input/output contract, a failure mode, and a proof-of-concept code snippet. Use these as your preparation notes.</p>
+
+  <div style="display:flex;gap:9px;margin-bottom:14px">
+    <button class="expand-btn" onclick="document.querySelectorAll('.agent').forEach(d=>d.setAttribute('open',''))">Expand all</button>
+    <button class="expand-btn" onclick="document.querySelectorAll('.agent').forEach(d=>d.removeAttribute('open'))">Collapse all</button>
+  </div>
+
+  <!-- A1 -->
+  <details class="agent" open>
+    <summary>
+      <div class="idx">01</div>
+      <div><h3>Business Question Agent</h3><p>Turn "revenue is down" into a precise analytical task with a metric contract.</p></div>
+      <div class="chev">+</div>
+    </summary>
+    <div class="agent-body">
+      <div class="agent-grid">
+        <div class="mini"><b>Purpose</b><span>Force metric definitions before any data work begins.</span></div>
+        <div class="mini"><b>Input</b><span>"Revenue is down. What happened?"</span></div>
+        <div class="mini"><b>Output</b><span>Metric contract: grain, numerator, denominator, window, threshold, audience.</span></div>
+        <div class="mini"><b>Failure mode</b><span>Jumping to charts without defining what "revenue" means.</span></div>
+      </div>
+      <div class="code">
+        <button class="copy-btn">copy</button>
+<pre><span class="cm"># Metric contract — fill this in before writing any code</span>
+<span class="cm"># Business question: Why did revenue decline this month?</span>
+<span class="cm">#</span>
+<span class="cm"># metric     : monthly revenue = SUM(payment_value)</span>
+<span class="cm"># grain      : one row per delivered order</span>
+<span class="cm"># filter     : order_status == 'delivered'</span>
+<span class="cm"># comparison : latest month vs previous month</span>
+<span class="cm"># breakdowns : channel, state, category, customer type</span>
+<span class="cm"># threshold  : alert when MoM change <= -10%</span>
+<span class="cm"># audience   : business manager + analytics lead</span></pre>
+      </div>
+      <div class="teacher" style="margin-top:11px">Ask first: "What is the denominator for AOV?" Most experienced analysts have never had to defend this. When they stumble, you have the class's attention.</div>
+
+      <div class="checkpoint">
+        <div class="cp-hd">
+          <div class="cp-num">C1</div>
+          <span class="cp-title">Metric Contract Challenge</span>
+          <span class="cp-time">3 min · verbal</span>
+        </div>
+        <div class="cp-bd">
+          <div class="cp-q">Before touching code — fill in this contract for "monthly revenue." No looking at the board.</div>
+          <div class="cp-row">
+            <div class="cp-blank">Metric name: _______________<br>Numerator: _______________<br>Denominator: _______________</div>
+            <div class="cp-blank">Filter: _______________<br>Comparison window: _______________<br>Alert threshold: _______________</div>
+          </div>
+          <div class="cp-tip">💡 Watch for: most analysts define revenue without specifying the filter. The denominator for AOV is where they reliably stumble — "total orders" vs "delivered orders" gives different numbers. The moment they see the gap, they understand why contracts matter.</div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- A2 -->
+  <details class="agent">
+    <summary>
+      <div class="idx">02</div>
+      <div><h3>Data Reader Agent</h3><p>Understand raw table structure before any transformation.</p></div>
+      <div class="chev">+</div>
+    </summary>
+    <div class="agent-body">
+      <div class="agent-grid">
+        <div class="mini"><b>Purpose</b><span>Discover tables, fields, grain, keys, date ranges, risky columns.</span></div>
+        <div class="mini"><b>Input</b><span>CSV / SQL table list.</span></div>
+        <div class="mini"><b>Output</b><span>Schema summary, join map, date coverage, null flags.</span></div>
+        <div class="mini"><b>Failure mode</b><span>Not knowing what one row represents before the first merge.</span></div>
+      </div>
+      <div class="code">
+        <button class="copy-btn">copy</button>
+<pre><span class="kw">def</span> <span class="fn">inspect_table</span>(df, name):
+    <span class="kw">return</span> {
+        <span class="str">"table"</span>:      name,
+        <span class="str">"rows"</span>:       <span class="bi">int</span>(df.shape[<span class="num">0</span>]),
+        <span class="str">"columns"</span>:    <span class="bi">int</span>(df.shape[<span class="num">1</span>]),
+        <span class="str">"dtypes"</span>:     df.dtypes.astype(<span class="str">"str"</span>).to_dict(),
+        <span class="str">"missing"</span>:    df.isna().sum().astype(<span class="bi">int</span>).to_dict(),
+        <span class="str">"duplicates"</span>: <span class="bi">int</span>(df.duplicated().sum()),
+    }
+
+table_summary = {name: inspect_table(df, name) <span class="kw">for</span> name, df <span class="kw">in</span> raw.items()}</pre>
+      </div>
+      <div class="warn" style="margin-top:11px">Critical moment: ask "What does <strong>one row</strong> represent?" before any merge. <span class="cn">一行代表什么。</span></div>
+    </div>
+  </details>
+
+  <!-- A3 -->
+  <details class="agent">
+    <summary>
+      <div class="idx">03</div>
+      <div><h3>Join / Manipulation Agent</h3><p>Build an analysis-ready fact table at a stable grain without metric duplication.</p></div>
+      <div class="chev">+</div>
+    </summary>
+    <div class="agent-body">
+      <div class="agent-grid">
+        <div class="mini"><b>Purpose</b><span>Transform many raw tables into one analysis frame.</span></div>
+        <div class="mini"><b>Input</b><span>orders, payments, items, reviews, customers.</span></div>
+        <div class="mini"><b>Output</b><span>Order-level fact table. Log row counts after each join.</span></div>
+        <div class="mini"><b>Failure mode</b><span>Many-to-many join that silently duplicates revenue rows.</span></div>
+      </div>
+      <div class="anti" style="margin-bottom:11px">Naive join on order_items before aggregating will create multiple rows per order and inflate revenue by item count.</div>
+      <div class="code">
+        <button class="copy-btn">copy</button>
+<pre><span class="cm"># Aggregate BEFORE joining — never join at item grain to orders</span>
+items_agg = order_items.groupby(<span class="str">"order_id"</span>).agg(
+    item_count      = (<span class="str">"order_item_id"</span>,      <span class="str">"count"</span>),
+    product_revenue = (<span class="str">"price"</span>,              <span class="str">"sum"</span>),
+    freight_value   = (<span class="str">"freight_value"</span>,      <span class="str">"sum"</span>),
+    primary_category= (<span class="str">"product_category"</span>,
+                       <span class="kw">lambda</span> x: x.mode().iloc[<span class="num">0</span>]),
+).reset_index()
+
+fact = (
+    orders
+    .merge(customers,  on=<span class="str">"customer_id"</span>, how=<span class="str">"left"</span>)
+    .merge(items_agg,  on=<span class="str">"order_id"</span>,   how=<span class="str">"left"</span>)
+    .merge(payments,   on=<span class="str">"order_id"</span>,   how=<span class="str">"left"</span>)
+    .merge(reviews[[<span class="str">"order_id"</span>, <span class="str">"review_score"</span>]],
+                       on=<span class="str">"order_id"</span>,   how=<span class="str">"left"</span>)
+)
+<span class="cm"># Always check null rates after joins</span>
+<span class="bi">print</span>(fact.isna().mean().round(<span class="num">3</span>)[fact.isna().mean() > <span class="num">0</span>])</pre>
+      </div>
+      <div class="note" style="margin-top:11px">Always use <code>left</code> joins. Check row count before and after each merge. A mismatch means a broken key or duplicates.</div>
+
+      <div class="bg-split" style="margin-top:14px">
+        <div class="bg-col bad">
+          <div class="bg-lbl">✗ Naive join — joins at item grain</div>
+          <div class="bg-body">
+            <code>fact = orders.merge(order_items, on="order_id").merge(payments, on="order_id")</code><br><br>
+            <code>fact["payment_value"].sum()</code>
+            <span class="bg-num" style="color:var(--danger)">$487,203</span>
+          </div>
+          <div class="bg-verdict">Row count inflated · payment duplicated by item count</div>
+        </div>
+        <div class="bg-col good">
+          <div class="bg-lbl">✓ Aggregate first, then join</div>
+          <div class="bg-body">
+            <code>items_agg = order_items.groupby("order_id").agg(...)</code><br><br>
+            <code>fact["payment_value"].sum()</code>
+            <span class="bg-num" style="color:var(--accent)">$281,400</span>
+          </div>
+          <div class="bg-verdict">One payment row per order · number is defensible</div>
+        </div>
+      </div>
+
+      <div class="checkpoint" style="margin-top:11px">
+        <div class="cp-hd">
+          <div class="cp-num">C2</div>
+          <span class="cp-title">Find the Broken Join</span>
+          <span class="cp-time">2 min · number trap</span>
+        </div>
+        <div class="cp-bd">
+          <div class="cp-q">Two runs on the same dataset return $487k vs $281k. Why is one wrong? Which join produced which number?</div>
+          <div class="cp-blank">Your answer: _______________________________________________<br><br>The rule this teaches: _______________________________________________</div>
+          <div class="cp-tip">💡 The comparison teaches faster than any explanation. A student who sees $487k vs $281k will never forget to aggregate before joining. Ask: "If you sent $487k to the CEO, what happens?"</div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- A4 -->
+  <details class="agent">
+    <summary>
+      <div class="idx">04</div>
+      <div><h3>Data Quality Agent</h3><p>Score data trust from 0–100 and document every cleaning assumption with business impact.</p></div>
+      <div class="chev">+</div>
+    </summary>
+    <div class="agent-body">
+      <div class="agent-grid">
+        <div class="mini"><b>Purpose</b><span>Surface trust issues before analysis. Make quality a measurable number.</span></div>
+        <div class="mini"><b>Input</b><span>Raw tables (before any cleaning).</span></div>
+        <div class="mini"><b>Output</b><span>Quality score (0–100), issue list with business impact, cleaning rules.</span></div>
+        <div class="mini"><b>Failure mode</b><span>Silent cleaning with no business explanation or before/after comparison.</span></div>
+      </div>
+
+      <div class="q-badge">
+        <span class="q-score">82</span>
+        <span class="q-label">/ 100 — example quality score<br><small style="color:var(--muted)">Deducted for duplicates, missing dates, negative delivery days</small></span>
+      </div>
+
+      <div class="code">
+        <button class="copy-btn">copy</button>
+<pre><span class="kw">def</span> <span class="fn">data_quality_agent</span>(data):
+    customers, orders, order_items, payments, reviews = (
+        data[k].copy() <span class="kw">for</span> k <span class="kw">in</span>
+        [<span class="str">"customers"</span>, <span class="str">"orders"</span>, <span class="str">"order_items"</span>, <span class="str">"payments"</span>, <span class="str">"reviews"</span>]
+    )
+    orders[<span class="str">"order_purchase_date"</span>]  = pd.to_datetime(orders[<span class="str">"order_purchase_date"</span>],  errors=<span class="str">"coerce"</span>)
+    orders[<span class="str">"order_delivered_date"</span>]  = pd.to_datetime(orders[<span class="str">"order_delivered_date"</span>],  errors=<span class="str">"coerce"</span>)
+    delivery_days = (orders[<span class="str">"order_delivered_date"</span>] - orders[<span class="str">"order_purchase_date"</span>]).dt.days
+
+    <span class="cm"># --- Outlier detection (IQR method) ---</span>
+    q1, q3 = order_items[<span class="str">"price"</span>].quantile([.<span class="num">25</span>, .<span class="num">75</span>])
+    price_outliers = <span class="bi">int</span>((order_items[<span class="str">"price"</span>] > q3 + <span class="num">3</span> * (q3 - q1)).sum())
+
+    <span class="cm"># --- Referential integrity ---</span>
+    orphan_orders   = <span class="bi">int</span>((~orders[<span class="str">"customer_id"</span>].isin(customers[<span class="str">"customer_id"</span>])).sum())
+    orphan_payments = <span class="bi">int</span>((~payments[<span class="str">"order_id"</span>].isin(orders[<span class="str">"order_id"</span>])).sum())
+
+    issues = [
+        {<span class="str">"category"</span>: <span class="str">"uniqueness"</span>,   <span class="str">"issue"</span>: <span class="str">"duplicate_customers"</span>,     <span class="str">"count"</span>: <span class="bi">int</span>(customers.duplicated().sum())},
+        {<span class="str">"category"</span>: <span class="str">"completeness"</span>, <span class="str">"issue"</span>: <span class="str">"missing_age"</span>,              <span class="str">"count"</span>: <span class="bi">int</span>(customers[<span class="str">"age"</span>].isna().sum())},
+        {<span class="str">"category"</span>: <span class="str">"completeness"</span>, <span class="str">"issue"</span>: <span class="str">"missing_delivery_date"</span>,     <span class="str">"count"</span>: <span class="bi">int</span>(orders[<span class="str">"order_delivered_date"</span>].isna().sum())},
+        {<span class="str">"category"</span>: <span class="str">"validity"</span>,     <span class="str">"issue"</span>: <span class="str">"negative_delivery_days"</span>,   <span class="str">"count"</span>: <span class="bi">int</span>((delivery_days < <span class="num">0</span>).sum())},
+        {<span class="str">"category"</span>: <span class="str">"validity"</span>,     <span class="str">"issue"</span>: <span class="str">"zero_or_negative_payments"</span>, <span class="str">"count"</span>: <span class="bi">int</span>((payments[<span class="str">"payment_value"</span>] &lt;= <span class="num">0</span>).sum())},
+        {<span class="str">"category"</span>: <span class="str">"outliers"</span>,     <span class="str">"issue"</span>: <span class="str">"price_outliers"</span>,           <span class="str">"count"</span>: price_outliers},
+        {<span class="str">"category"</span>: <span class="str">"referential"</span>,  <span class="str">"issue"</span>: <span class="str">"orphan_records"</span>,           <span class="str">"count"</span>: orphan_orders + orphan_payments},
+    ]
+    score = <span class="num">100</span> - <span class="bi">sum</span>(min(<span class="num">15</span>, i[<span class="str">"count"</span>] * <span class="num">2</span>) <span class="kw">for</span> i <span class="kw">in</span> issues)
+    <span class="kw">return</span> {<span class="str">"quality_score"</span>: <span class="bi">max</span>(<span class="num">0</span>, score), <span class="str">"issues"</span>: issues}</pre>
+      </div>
+
+      <h4 style="margin-top:14px;margin-bottom:8px">Cleaning impact — show before/after to make cleaning decisions tangible</h4>
+      <div class="ba-grid">
+        <div class="ba-cell">
+          <div class="label">Customer count</div>
+          <div class="before">1,205</div>
+          <div class="arrow">↓ drop dupes</div>
+          <div class="after">1,200</div>
+          <div class="note">5 exact duplicates removed</div>
+        </div>
+        <div class="ba-cell">
+          <div class="label">Avg delivery days</div>
+          <div class="before">4.9</div>
+          <div class="arrow">↓ null negative</div>
+          <div class="after">5.1</div>
+          <div class="note">8 negative-day records nulled</div>
+        </div>
+        <div class="ba-cell">
+          <div class="label">Revenue (all vs delivered)</div>
+          <div class="before">$293k</div>
+          <div class="arrow">↓ filter status</div>
+          <div class="after">$281k</div>
+          <div class="note">Canceled orders excluded — expected</div>
+        </div>
+      </div>
+
+      <div class="teacher" style="margin-top:12px">Walk through each "before → after" number and ask: "Would this difference change the conclusion we give to the business?" If yes, the cleaning decision matters. If no, document it and move on.</div>
+
+      <div class="mini" style="margin-top:11px">
+        <b>Discussion prompts</b>
+        <ul>
+          <li>Should canceled orders count in revenue?</li>
+          <li>Does missing review score mean neutral, bad, or unknown?</li>
+          <li>Is zero payment a refund, a free order, or a data entry error?</li>
+          <li>Should price outliers be capped, removed, or flagged and kept?</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <!-- A5 -->
+  <details class="agent">
+    <summary>
+      <div class="idx">05</div>
+      <div><h3>Metric Agent</h3><p>Compute verified, auditable metrics from the clean fact table only.</p></div>
+      <div class="chev">+</div>
+    </summary>
+    <div class="agent-body">
+      <div class="agent-grid">
+        <div class="mini"><b>Purpose</b><span>Produce the numbers all downstream agents will reference.</span></div>
+        <div class="mini"><b>Input</b><span>Clean fact table (delivered orders only).</span></div>
+        <div class="mini"><b>Output</b><span>Monthly, channel, category-level metric tables.</span></div>
+        <div class="mini"><b>Failure mode</b><span>Wrong denominator or using sum() on a join-inflated table.</span></div>
+      </div>
+      <div class="code">
+        <button class="copy-btn">copy</button>
+<pre>delivered = fact[fact[<span class="str">"order_status"</span>] == <span class="str">"delivered"</span>].copy()
+
+monthly = delivered.groupby(<span class="str">"order_month"</span>).agg(
+    revenue         = (<span class="str">"payment_value"</span>,    <span class="str">"sum"</span>),
+    orders          = (<span class="str">"order_id"</span>,         <span class="str">"nunique"</span>),
+    customers       = (<span class="str">"customer_id"</span>,      <span class="str">"nunique"</span>),
+    avg_order_value = (<span class="str">"payment_value"</span>,    <span class="str">"mean"</span>),
+    avg_review      = (<span class="str">"review_score"</span>,     <span class="str">"mean"</span>),
+    avg_delivery    = (<span class="str">"delivery_days_clean"</span>, <span class="str">"mean"</span>),
+    low_review_rate = (<span class="str">"low_review"</span>,       <span class="str">"mean"</span>),
+).reset_index().sort_values(<span class="str">"order_month"</span>)
+
+monthly[<span class="str">"revenue_mom"</span>] = monthly[<span class="str">"revenue"</span>].pct_change()
+
+<span class="cm"># Use nunique() when the table may have multiple rows per entity</span></pre>
+      </div>
+      <div class="note" style="margin-top:11px">Use <code>nunique()</code> for orders and customers after a join — <code>count()</code> will be inflated if any many-to-one relationship exists.</div>
+
+      <h4 style="margin-top:16px;margin-bottom:8px">Sample output — <code>monthly_metrics.tail(6)</code></h4>
+      <div class="out-preview">
+        <div class="op-hd"><span>monthly_metrics</span> · delivered orders only · revenue in USD</div>
+        <table>
+          <thead>
+            <tr><th>order_month</th><th>revenue</th><th>orders</th><th>customers</th><th>avg_order_value</th><th>avg_delivery</th><th>low_review_rate</th><th>revenue_mom</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>2024-01</td><td>$94,210</td><td>924</td><td>812</td><td>$102.0</td><td>5.1d</td><td>11.8%</td><td class="nu">—</td></tr>
+            <tr><td>2024-02</td><td>$98,440</td><td>962</td><td>847</td><td>$102.3</td><td>5.0d</td><td>12.1%</td><td class="up">+4.5%</td></tr>
+            <tr><td>2024-03</td><td>$103,580</td><td>1,008</td><td>889</td><td>$102.8</td><td>5.2d</td><td>11.9%</td><td class="up">+5.2%</td></tr>
+            <tr><td>2024-04</td><td>$121,800</td><td>1,190</td><td>976</td><td>$102.4</td><td>5.4d</td><td>12.8%</td><td class="up">+17.6%</td></tr>
+            <tr><td>2024-05</td><td>$128,400</td><td>1,240</td><td>1,015</td><td>$103.5</td><td>5.1d</td><td>12.3%</td><td class="up">+5.4%</td></tr>
+            <tr class="alert-row"><td>2024-06</td><td>$104,400</td><td>1,042</td><td>884</td><td>$100.2</td><td>6.8d</td><td>15.4%</td><td class="dn">–14.3% ⚠</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="teacher" style="margin-top:11px">Point at the June row — three things changed at once: revenue, avg_delivery, and low_review_rate. Ask: "Which of these three do you investigate first, and why?" The debate that follows is the best minute of the class.</div>
+    </div>
+  </details>
+
+  <!-- A6 -->
+  <details class="agent">
+    <summary>
+      <div class="idx">06</div>
+      <div><h3>EDA Agent</h3><p>Follow a repeatable diagnostic template — not random charts.</p></div>
+      <div class="chev">+</div>
+    </summary>
+    <div class="agent-body">
+      <div class="agent-grid">
+        <div class="mini"><b>Purpose</b><span>Explore shape, trends, segments, and anomalies before any statistical claim.</span></div>
+        <div class="mini"><b>Input</b><span>Fact table + monthly aggregates.</span></div>
+        <div class="mini"><b>Output</b><span>EDA pack: 6 structured outputs + written hypothesis list.</span></div>
+        <div class="mini"><b>Failure mode</b><span>Charts that don't answer a specific question.</span></div>
+      </div>
+      <div class="teacher">Before generating any chart, ask: "What is the <em>business question</em> this chart answers?" If the student can't state the question in one sentence, don't make the chart.</div>
+    </div>
+  </details>
+
+  <!-- A7 -->
+  <details class="agent">
+    <summary>
+      <div class="idx">07</div>
+      <div><h3>Statistics Agent</h3><p>Move from description to evidence-based association using logistic regression.</p></div>
+      <div class="chev">+</div>
+    </summary>
+    <div class="agent-body">
+      <div class="agent-grid">
+        <div class="mini"><b>Purpose</b><span>Test whether delivery delay is associated with low-review risk, controlling for order value and freight.</span></div>
+        <div class="mini"><b>Input</b><span>Clean delivered-order frame with delivery_days_clean, payment_value, freight_value, low_review.</span></div>
+        <div class="mini"><b>Output</b><span>Coefficients, odds ratios, p-values, plain-English interpretation.</span></div>
+        <div class="mini"><b>Failure mode</b><span>Claiming delivery delay <em>causes</em> bad reviews.</span></div>
+      </div>
+      <div class="anti">This is an observational study. Delivery delay is <strong>associated with</strong> low reviews after controlling for order value and freight — but unmeasured confounders (seller quality, product category, expectations) may drive both. <span class="cn">相关不等于因果。</span></div>
+    </div>
+  </details>
+
+  <!-- A8 -->
+  <details class="agent">
+    <summary>
+      <div class="idx">08</div>
+      <div><h3>Insight / Visualization / Alert Agents</h3><p>Translate evidence into communication and action.</p></div>
+      <div class="chev">+</div>
+    </summary>
+    <div class="agent-body">
+      <div class="agent-grid">
+        <div class="mini"><b>Purpose</b><span>Communicate findings to the business safely — no hallucination, no overstatement.</span></div>
+        <div class="mini"><b>Input</b><span>Verified metric tables + model output.</span></div>
+        <div class="mini"><b>Output</b><span>Business summary, 3 charts, alert payload, email draft.</span></div>
+        <div class="mini"><b>Failure mode</b><span>Auto-sending alerts without human review; claiming causality; inventing numbers.</span></div>
+      </div>
+      <div class="note">Every sentence in the business summary should be traceable to a specific Python output cell. Run the AI anti-pattern demo here: ask AI for revenue without pasting data, show the hallucination.</div>
+    </div>
+  </details>
+</section>
+
+<!-- 05 EDA BLUEPRINT -->
+<section id="eda">
+  <div class="kicker">EDA blueprint</div>
+  <h2>A concrete diagnostic template — not "explore the data."</h2>
+  <p class="sub">The student should leave knowing exactly which EDA outputs to produce, in what order, and what business question each one answers. Six blocks, six outputs.</p>
+
+  <div class="card" style="padding:18px;margin-bottom:14px">
+    <h3>EDA workflow</h3>
+    <div class="flow-wrap" style="margin-top:12px">
+      <div class="flow-h">
+        <div class="step"><span class="sid">E1</span><b>Data structure</b><p>Rows, dates, missingness, duplicates, distinct category values.</p></div>
+        <div class="arr">→</div>
+        <div class="step"><span class="sid">E2</span><b>Metric sanity</b><p>Revenue distribution, outliers, zero/negative values, date gaps.</p></div>
+        <div class="arr">→</div>
+        <div class="step"><span class="sid">E3</span><b>Time analysis</b><p>Monthly/weekly trends, MoM change, anomaly windows, change points.</p></div>
+        <div class="arr">→</div>
+        <div class="step"><span class="sid">E4</span><b>Segment analysis</b><p>Revenue by channel, state, category. MoM change per segment. Top vs bottom.</p></div>
+        <div class="arr">→</div>
+        <div class="step"><span class="sid">E5</span><b>Bivariate / relational</b><p>Delivery days vs review score. Revenue vs order count. Correlation matrix.</p></div>
+        <div class="arr">→</div>
+        <div class="step"><span class="sid">E6</span><b>Hypotheses</b><p>Write 2–3 plausible drivers based on EDA before touching the model.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="checklist">
+    <div class="check"><h4>Block 1 — Data structure &amp; quality</h4><ol><li>Table row counts and date coverage</li><li>Missingness % by column</li><li>Duplicate counts by natural key</li><li>Distinct values in status/category fields</li><li>Min/max dates and time gaps</li></ol></div>
+    <div class="check"><h4>Block 2 — Univariate metric sanity</h4><ol><li>Distribution of payment_value</li><li>Distribution of delivery_days_clean</li><li>Distribution of review_score (1–5 bar)</li><li>Top 1% order values — outlier check</li><li>Zero / negative / null value audit</li></ol></div>
+    <div class="check"><h4>Block 3 — Time analysis</h4><ol><li>Monthly revenue + MoM % change table</li><li>Orders and customers over time</li><li>AOV and avg review score over time</li><li>Weekly trend if monthly looks flat</li><li>Annotate anomaly windows</li></ol></div>
+    <div class="check"><h4>Block 4 — Segment analysis</h4><ol><li>Revenue by channel / state / category</li><li>MoM change by segment</li><li>Top vs bottom segments</li><li>New vs returning customer split</li><li>Canceled / delayed orders by segment</li></ol></div>
+    <div class="check"><h4>Block 5 — Bivariate / relational</h4><ol><li>Delay bucket vs avg review score</li><li>Delay bucket vs low-review rate</li><li>Payment value vs freight value</li><li>Order count contribution curve</li><li>Correlation matrix (numeric columns)</li></ol></div>
+    <div class="check"><h4>Block 6 — Customer behavior</h4><ol><li>Repeat purchase rate overall</li><li>Days between first and second order</li><li>First-order-month cohort table</li><li>Activity / email-open rate</li><li>Churn proxy: no order within 90 days</li></ol></div>
+  </div>
+
+  <div class="matrix" style="margin-top:14px">
+    <div class="card pad">
+      <h3>Six required EDA outputs</h3>
+      <div class="tbl" style="margin-top:10px">
+        <div class="tr col2"><div class="td">Output 1</div><div class="td">Schema + quality table: rows, date range, key columns, missingness, duplicates, quality score.</div></div>
+        <div class="tr col2"><div class="td">Output 2</div><div class="td">Monthly metric table: revenue, orders, customers, AOV, avg review, avg delivery days, MoM %.</div></div>
+        <div class="tr col2"><div class="td">Output 3</div><div class="td">Segment table: revenue by channel + category + MoM change. Annotate top contributor to the drop.</div></div>
+        <div class="tr col2"><div class="td">Output 4</div><div class="td">Numeric distribution pack: payment_value, delivery_days_clean, review_score histograms.</div></div>
+        <div class="tr col2"><div class="td">Output 5</div><div class="td">Delay bucket table: avg_review and low_review_rate for 0–2, 3–5, 6–10, 11–20, 20+ day buckets.</div></div>
+        <div class="tr col2"><div class="td">Output 6</div><div class="td">Written hypothesis list (2–3 sentences). Student writes this before the model runs.</div></div>
+      </div>
+    </div>
+    <div class="card pad">
+      <h3>Key EDA code snippets</h3>
+      <div class="code" style="margin-top:10px">
+        <button class="copy-btn">copy</button>
+<pre><span class="cm"># Delay buckets → bridge EDA and logistic regression</span>
+fact[<span class="str">"delay_bucket"</span>] = pd.cut(
+    fact[<span class="str">"delivery_days_clean"</span>],
+    bins=[<span class="num">-1</span>, <span class="num">2</span>, <span class="num">5</span>, <span class="num">10</span>, <span class="num">20</span>, <span class="num">999</span>],
+    labels=[<span class="str">"0–2"</span>, <span class="str">"3–5"</span>, <span class="str">"6–10"</span>, <span class="str">"11–20"</span>, <span class="str">"20+"</span>]
+)
+delay_review = fact.groupby(<span class="str">"delay_bucket"</span>).agg(
+    avg_review     = (<span class="str">"review_score"</span>, <span class="str">"mean"</span>),
+    low_review_rate= (<span class="str">"low_review"</span>,   <span class="str">"mean"</span>),
+    order_count    = (<span class="str">"order_id"</span>,     <span class="str">"nunique"</span>),
+).reset_index()
+
+<span class="cm"># Segment MoM change</span>
+seg_mom = fact.groupby([<span class="str">"order_month"</span>, <span class="str">"acquisition_channel"</span>]).agg(
+    revenue = (<span class="str">"payment_value"</span>, <span class="str">"sum"</span>)
+).reset_index()
+seg_mom[<span class="str">"mom"</span>] = seg_mom.groupby(<span class="str">"acquisition_channel"</span>)[<span class="str">"revenue"</span>].pct_change()</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-swatch">
+        <svg viewBox="0 0 300 110" preserveAspectRatio="none" style="position:absolute;inset:10px">
+          <defs><linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#88a7ff" stop-opacity=".28"/><stop offset="100%" stop-color="#88a7ff" stop-opacity="0"/></linearGradient></defs>
+          <path d="M0,85 C20,82 35,74 55,65 S85,50 110,44 S150,50 175,42 S220,62 245,35 L270,22 L285,26 L285,110 L0,110Z" fill="url(#lg1)"/>
+          <path d="M0,85 C20,82 35,74 55,65 S85,50 110,44 S150,50 175,42 S220,62 245,35 L270,22 L285,26" fill="none" stroke="#88a7ff" stroke-width="2.5" stroke-linejoin="round"/>
+          <circle cx="285" cy="26" r="4" fill="#88a7ff"/>
+          <text x="268" y="18" font-size="9" fill="#88a7ff" font-family="monospace">latest</text>
+        </svg>
+      </div>
+      <h4>1 — Revenue trend line</h4>
+      <p><strong>Question:</strong> When did the drop start — sharp or gradual?</p>
+      <ul><li>X-axis: month or week</li><li>Series: revenue + MoM % labels</li><li>Mark anomaly windows</li></ul>
+    </div>
+    <div class="chart-card">
+      <div class="chart-swatch">
+        <svg viewBox="0 0 300 110" style="position:absolute;inset:10px">
+          <text x="8" y="18" font-size="9" fill="#a9b8cc" font-family="monospace">Organic</text>
+          <rect x="75" y="8" width="185" height="13" rx="4" fill="#67efc0" opacity=".8"/>
+          <text x="8" y="38" font-size="9" fill="#a9b8cc" font-family="monospace">Paid</text>
+          <rect x="75" y="28" width="145" height="13" rx="4" fill="#88a7ff" opacity=".8"/>
+          <text x="8" y="58" font-size="9" fill="#a9b8cc" font-family="monospace">Referral</text>
+          <rect x="75" y="48" width="108" height="13" rx="4" fill="#ffd36e" opacity=".8"/>
+          <text x="8" y="78" font-size="9" fill="#a9b8cc" font-family="monospace">Social</text>
+          <rect x="75" y="68" width="78" height="13" rx="4" fill="#8ae3ff" opacity=".7"/>
+          <text x="8" y="98" font-size="9" fill="#a9b8cc" font-family="monospace">Email</text>
+          <rect x="75" y="88" width="55" height="13" rx="4" fill="#ff8f9f" opacity=".7"/>
+        </svg>
+      </div>
+      <h4>2 — Segment contribution</h4>
+      <p><strong>Question:</strong> Which channel/state/category drove the drop?</p>
+      <ul><li>Sort by current-period revenue</li><li>Show top 5–6 segments</li><li>Annotate biggest negative change</li></ul>
+    </div>
+    <div class="chart-card">
+      <div class="chart-swatch">
+        <svg viewBox="0 0 300 110" style="position:absolute;inset:10px">
+          <line x1="20" y1="15" x2="270" y2="92" stroke="#88a7ff" stroke-width="1.5" stroke-dasharray="4,3" opacity=".6"/>
+          <circle cx="30"  cy="16" r="5" fill="#67efc0" opacity=".85"/>
+          <circle cx="55"  cy="22" r="5" fill="#67efc0" opacity=".85"/>
+          <circle cx="80"  cy="28" r="5" fill="#67efc0" opacity=".85"/>
+          <circle cx="105" cy="38" r="5" fill="#8ae3ff" opacity=".85"/>
+          <circle cx="130" cy="47" r="5" fill="#8ae3ff" opacity=".85"/>
+          <circle cx="155" cy="55" r="5" fill="#ffd36e" opacity=".85"/>
+          <circle cx="180" cy="63" r="5" fill="#ffd36e" opacity=".85"/>
+          <circle cx="205" cy="71" r="5" fill="#ff8f9f" opacity=".85"/>
+          <circle cx="230" cy="80" r="5" fill="#ff8f9f" opacity=".85"/>
+          <circle cx="255" cy="88" r="5" fill="#ff8f9f" opacity=".85"/>
+          <text x="25"  y="105" font-size="9" fill="#a9b8cc">Short delivery</text>
+          <text x="205" y="105" font-size="9" fill="#a9b8cc">Long delivery</text>
+        </svg>
+      </div>
+      <h4>3 — Delivery vs review</h4>
+      <p><strong>Question:</strong> Does delivery delay visually correlate with lower scores?</p>
+      <ul><li>Use scatter or delay-bucket averages</li><li>Color by review score range</li><li>This prepares the logistic regression story</li></ul>
+    </div>
+  </div>
+
+  <div class="checkpoint">
+    <div class="cp-hd">
+      <div class="cp-num">C3</div>
+      <span class="cp-title">EDA Prioritization — 20 minutes, pick 3</span>
+      <span class="cp-time">5 min · strategy</span>
+    </div>
+    <div class="cp-bd">
+      <div class="cp-q">You have 20 minutes of EDA time. From the 6 blocks above, which 3 outputs do you run first to diagnose the revenue drop? State each choice and why in one sentence.</div>
+      <div class="cp-row">
+        <div class="cp-blank">1. ________________________<br>because _________________________</div>
+        <div class="cp-blank">2. ________________________<br>because _________________________</div>
+      </div>
+      <div class="cp-blank" style="margin-bottom:10px">3. ________________________ because _________________________</div>
+      <div class="cp-tip">💡 Strong answer: Block 3 (monthly trend — when did it start?), Block 4 (segment — which channel drove it?), Block 5 (delay bucket — did CX worsen?). Weak answer: Block 2 distributions — tells you very little about a change point. Push back: "That chart shows the distribution. But you need to know what <em>changed</em>."</div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 STATISTICS -->
+<section id="model">
+  <div class="kicker">Statistics / model</div>
+  <h2>One model. Simple, interpretable, not trivial.</h2>
+  <p class="sub">Logistic regression for low-review risk keeps the class practical while introducing proper statistical thinking: target definition, control variables, odds ratios, p-values, and the causation caveat.</p>
+
+  <div class="checkpoint" style="margin-bottom:16px">
+    <div class="cp-hd">
+      <div class="cp-num">C4</div>
+      <span class="cp-title">Predict Before You Run</span>
+      <span class="cp-time">2 min · before model runs</span>
+    </div>
+    <div class="cp-bd">
+      <div class="cp-q">Before running the model — write your prediction. What sign and magnitude do you expect for each predictor?</div>
+      <div class="cp-row">
+        <div class="cp-blank">delivery_days_clean OR will be:<br>Greater than 1 / Less than 1? ___<br>Significant (p&lt;0.05)? ___</div>
+        <div class="cp-blank">payment_value OR will be: ___<br>Direction: positive / negative? ___<br>Most surprising predictor: ___</div>
+      </div>
+      <div class="cp-tip">💡 The prediction step is not about being right — it's about making the student an <em>active participant</em> in the model. When the output surprises their intuition (e.g., payment_value has a negative OR — higher-value orders get better reviews), that surprise is the lesson. It sticks because they made a stake.</div>
+    </div>
+  </div>
+
+  <div class="matrix">
+    <div class="card pad">
+      <h3>Business framing</h3>
+      <div class="mini" style="margin-top:10px"><ul>
+        <li><strong>Question:</strong> Does longer delivery time increase the probability of a low review?</li>
+        <li><strong>Target:</strong> <code>low_review = 1 if review_score ≤ 2 else 0</code></li>
+        <li><strong>Features:</strong> delivery_days_clean, payment_value, freight_value</li>
+        <li><strong>Why logit:</strong> binary outcome, interpretable coefficients, business-relevant</li>
+      </ul></div>
+      <div class="code" style="margin-top:12px">
+        <button class="copy-btn">copy</button>
+<pre><span class="kw">import</span> statsmodels.formula.api <span class="kw">as</span> smf
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+model_df = order_fact[
+    (order_fact[<span class="str">"order_status"</span>] == <span class="str">"delivered"</span>)
+    & order_fact[<span class="str">"delivery_days_clean"</span>].notna()
+    & order_fact[<span class="str">"payment_value"</span>].notna()
+    & order_fact[<span class="str">"freight_value"</span>].notna()
+].copy()
+
+model = smf.logit(
+    <span class="str">"low_review ~ delivery_days_clean + payment_value + freight_value"</span>,
+    data=model_df
+).fit(disp=<span class="kw">False</span>)
+
+odds_ratios = np.exp(model.params).round(<span class="num">4</span>)
+p_values    = model.pvalues.round(<span class="num">4</span>)
+<span class="bi">print</span>(model.summary())</pre>
+      </div>
+    </div>
+    <div class="card pad">
+      <h3>How to interpret — step by step</h3>
+      <div class="tbl" style="margin-top:10px">
+        <div class="tr col2"><div class="td">Coefficient sign</div><div class="td">Positive → higher log-odds of low review. Negative → lower.</div></div>
+        <div class="tr col2"><div class="td">Odds ratio</div><div class="td">OR = exp(coef). OR 1.08 on delivery_days means each extra day multiplies the odds of a bad review by 1.08 (+8%).</div></div>
+        <div class="tr col2"><div class="td">p-value</div><div class="td">Evidence strength, not business importance. p &lt; 0.05 is conventional. Always interpret alongside effect size.</div></div>
+        <div class="tr col2"><div class="td">Control variables</div><div class="td">payment_value and freight_value control for order value before judging delivery days.</div></div>
+        <div class="tr col2"><div class="td">Causation caveat</div><div class="td">Observational data. Unmeasured confounders exist. Do not say delivery <em>causes</em> bad reviews.</div></div>
+      </div>
+      <div class="teacher" style="margin-top:12px">Student task: explain the delivery_days_clean odds ratio in one sentence to a VP of Operations. If they say "causes," correct it live. This is the most valuable 2 minutes of the class.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 VIZ + ALERTING -->
+<section id="alerts">
+  <div class="kicker">Visualization + alerting</div>
+  <h2>Charts answer questions. Alerts request actions.</h2>
+  <p class="sub">Every chart must answer a specific question stated before the chart is made. Every alert is a draft until a human approves it.</p>
+
+  <div class="grid g3" style="margin-bottom:14px">
+    <div class="card pad"><h3>Chart 1 — Revenue trend</h3><p>Monthly revenue with MoM % annotations. Shows <em>when</em> the drop started and whether it's sharp or gradual.</p></div>
+    <div class="card pad"><h3>Chart 2 — Channel comparison</h3><p>Revenue and low-review rate side by side by channel. Shows <em>which segment</em> is the driver — and whether the high-revenue channel has hidden CX problems.</p></div>
+    <div class="card pad"><h3>Chart 3 — Delivery vs review box plot</h3><p>Delivery days distribution broken by review score (1–5). Bridges EDA directly to the logistic regression result.</p></div>
+  </div>
+
+  <h3 style="margin-bottom:11px">What makes an insight sentence defensible?</h3>
+  <div class="bg-split" style="margin-bottom:16px">
+    <div class="bg-col bad">
+      <div class="bg-lbl">✗ Bad insight</div>
+      <div class="bg-body">"Revenue decreased this month."</div>
+      <div class="bg-verdict">A number without context is not an insight · No driver · No evidence · No action</div>
+    </div>
+    <div class="bg-col good">
+      <div class="bg-lbl">✓ Defensible insight</div>
+      <div class="bg-body">"Revenue declined –14.3% in June (Python: monthly_metrics row 2024-06), driven by a –22% drop in Paid Search while Organic held flat (Python: channel_metrics). Avg delivery time rose from 5.1 to 6.8 days in the same period, coinciding with a 3-point increase in low-review rate."</div>
+      <div class="bg-verdict">Verified numbers · Source referenced · Driver named · Supporting evidence · No causal claim</div>
+    </div>
+  </div>
+
+  <div class="matrix">
+    <div class="card pad">
+      <h3>Alert logic</h3>
+      <div class="code" style="margin-top:10px">
+        <button class="copy-btn">copy</button>
+<pre>monthly = monthly.sort_values(<span class="str">"order_month"</span>)
+monthly[<span class="str">"revenue_mom"</span>] = monthly[<span class="str">"revenue"</span>].pct_change()
+latest = monthly.iloc[-<span class="num">1</span>]
+
+alert_payload = {
+    <span class="str">"latest_month"</span>:    latest[<span class="str">"order_month"</span>],
+    <span class="str">"latest_revenue"</span>:  <span class="bi">round</span>(<span class="bi">float</span>(latest[<span class="str">"revenue"</span>]), <span class="num">2</span>),
+    <span class="str">"revenue_mom"</span>:     <span class="bi">round</span>(<span class="bi">float</span>(latest[<span class="str">"revenue_mom"</span>]), <span class="num">4</span>),
+    <span class="str">"alert_threshold"</span>: -<span class="num">0.10</span>,
+    <span class="str">"alert"</span>:           <span class="bi">bool</span>(latest[<span class="str">"revenue_mom"</span>] &lt;= -<span class="num">0.10</span>),
+}</pre>
+      </div>
+      <div class="mini" style="margin-top:11px"><ul>
+        <li>Trigger only on latest month breaching threshold</li>
+        <li>Optionally add: breach must persist 2+ periods</li>
+        <li>Optionally add: only alert if order volume is above minimum (avoids sparse-month noise)</li>
+      </ul></div>
+    </div>
+    <div class="card pad">
+      <h3>Email draft structure</h3>
+      <div class="mini" style="margin-top:10px">
+        <ol>
+          <li><strong>Subject:</strong> what changed + when</li>
+          <li>1 sentence: metric breach (number from Python)</li>
+          <li>1 sentence: likely driver (from segment analysis)</li>
+          <li>1 sentence: recommended next action</li>
+          <li>1 caveat: human review required before sending</li>
+        </ol>
+      </div>
+      <div class="code" style="margin-top:11px">
+<pre><span class="cm"># Example generated alert</span>
+Subject: [ALERT] Revenue Drop — June 2024
+
+Revenue in June 2024 was $189,420 (–14.2% vs May).
+The drop is concentrated in Paid Search, which declined
+–22% while Organic held flat. Avg delivery days increased
+from 5.1 to 6.8 days in the same period.
+
+Recommended next step: review recent paid campaign changes
+and check whether delivery delays increased for paid orders.
+
+⚠ This draft requires human review before sending.</pre>
+      </div>
+      <div class="teacher" style="margin-top:11px">Have the student write the email first without seeing the generated draft. Then compare: which numbers did they verify? Which did they assume? What's missing?</div>
+    </div>
+  </div>
+
+  <div class="checkpoint" style="margin-top:16px">
+    <div class="cp-hd">
+      <div class="cp-num">C5</div>
+      <span class="cp-title">Alert Email Rewrite — Capstone</span>
+      <span class="cp-time">8 min · final challenge</span>
+    </div>
+    <div class="cp-bd">
+      <div class="cp-q">Here is a bad alert email. Rewrite it to business-ready standard. Constraint: do not add any number that isn't already verified in your Python output.</div>
+      <div class="bg-split" style="margin-bottom:11px">
+        <div class="bg-col bad">
+          <div class="bg-lbl">✗ Bad draft to rewrite</div>
+          <div class="bg-body" style="font-size:12.5px">Subject: Revenue is down<br><br>Revenue is down this month. It looks like delivery is causing bad reviews. We should fix the logistics problem immediately. The operations team needs to be notified right away.</div>
+          <div class="bg-verdict">Invented causal claim · No numbers · No action owner · No verification note</div>
+        </div>
+        <div class="bg-col good">
+          <div class="bg-lbl">Your rewrite (use only verified numbers):</div>
+          <div class="bg-body">
+            <div class="cp-blank" style="border:none;padding:0;background:none;min-height:90px">Subject: _______________<br><br>_______________<br><br>_______________<br><br>Recommended action: _______________<br><br>⚠ Pending human review</div>
+          </div>
+          <div class="bg-verdict" style="color:var(--muted)">Then compare: student draft · AI draft · neither is perfect</div>
+        </div>
+      </div>
+      <div class="cp-tip">💡 Three-way debrief is the capstone: student's draft vs the Python-generated draft vs "what would a senior analyst add?" Ask: which numbers did each miss? Which claim needs verification? The goal isn't a perfect email — it's knowing what a defensible email requires.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 08 DATA DESIGN -->
+<section id="data">
+  <div class="kicker">Data source design</div>
+  <h2>Rich enough to feel real. Simple enough to set up in 2 minutes.</h2>
+  <p class="sub">The dataset should support every workflow step without requiring Kaggle setup or large file downloads. Intentionally synthetic data lets the class focus on analysis, not setup.</p>
+  <div class="grid g2">
+    <div class="card pad">
+      <h3>Required tables</h3>
+      <div class="mini" style="margin-top:10px"><ul>
+        <li><code>orders.csv</code> — order_id, customer_id, status, purchase_date, delivered_date, delivery_days</li>
+        <li><code>payments.csv</code> — order_id, payment_value, payment_type, installments</li>
+        <li><code>order_items.csv</code> — order_id, item_id, product_category, price, freight_value</li>
+        <li><code>customers.csv</code> — customer_id, signup_date, state, acquisition_channel, segment, age</li>
+        <li><code>reviews.csv</code> — order_id, review_score, review_date</li>
+        <li><code>activity.csv</code> — customer_id, activity_date, session_count, email_opened</li>
+      </ul></div>
+    </div>
+    <div class="card pad">
+      <h3>Intentional data quality issues to include</h3>
+      <div class="tbl" style="margin-top:10px">
+        <div class="tr col2"><div class="td">Duplicate customers</div><div class="td">5 exact duplicate rows — tests uniqueness check</div></div>
+        <div class="tr col2"><div class="td">Missing age</div><div class="td">4% of customers — tests completeness + imputation decision</div></div>
+        <div class="tr col2"><div class="td">Missing delivery date</div><div class="td">~9% of orders (canceled/processing) — tests filter logic</div></div>
+        <div class="tr col2"><div class="td">Negative delivery days</div><div class="td">8 orders — tests validity + model feature safety</div></div>
+        <div class="tr col2"><div class="td">Zero payments</div><div class="td">Canceled orders with payment_value = 0 — tests revenue filter</div></div>
+        <div class="tr col2"><div class="td">Price outliers</div><div class="td">A few extreme items — tests IQR outlier detection</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 09 PROMPTS -->
+<section id="prompts">
+  <div class="kicker">Prompt templates</div>
+  <h2>Prompt with contracts. Not with wishes.</h2>
+  <p class="sub">Each prompt below is paired with the workflow step it belongs to. The rule: Python runs first and produces verified output. The prompt is then given that output to interpret — never to calculate.</p>
+
+  <div class="prompt-grid">
+    <div class="prompt-card">
+      <div class="ph"><b>EDA Planning Prompt</b><div class="tag">Before EDA</div></div>
+      <div class="code">
+        <button class="copy-btn">copy</button>
+<pre>You are an EDA Agent.
+Given the fact table schema and business question below,
+propose a focused EDA plan.
+
+Business question: Revenue dropped this month. Diagnose why.
+
+Requirements:
+1. Include: univariate checks, time trends, segment analysis,
+   and variable relationships.
+2. For each proposed output, state the business question it answers.
+3. Do not invent any numbers.
+4. Prioritize: must-have / nice-to-have / optional.
+
+Schema: [PASTE table_summary dict here]</pre>
+      </div>
+    </div>
+
+    <div class="prompt-card">
+      <div class="ph"><b>Quality Interpretation Prompt</b><div class="tag">After quality agent</div></div>
+      <div class="code">
+        <button class="copy-btn">copy</button>
+<pre>Here is my data quality report from Python:
+[PASTE quality_report dict here]
+
+For each issue:
+1. Confirm whether my proposed fix is correct.
+2. Flag any risk I haven't considered.
+3. Explain the business impact in plain English.
+
+Do not calculate any new numbers.
+Only interpret the findings I have already verified.</pre>
+      </div>
+    </div>
+
+    <div class="prompt-card">
+      <div class="ph"><b>Metric Insight Prompt</b><div class="tag">After metrics computed</div></div>
+      <div class="code">
+        <button class="copy-btn">copy</button>
+<pre>Here are verified Python outputs only:
+[PASTE monthly_metrics tail]
+[PASTE channel_metrics table]
+
+Summarize the 3 most important business observations.
+Rules:
+- Do not invent numbers.
+- Reference only rows/columns in the data above.
+- Keep it under 100 words.
+- End with one recommended action.</pre>
+      </div>
+    </div>
+
+    <div class="prompt-card">
+      <div class="ph"><b>Model Interpretation Prompt</b><div class="tag">After logistic regression</div></div>
+      <div class="code">
+        <button class="copy-btn">copy</button>
+<pre>Here are logistic regression results from Python:
+[PASTE model_result dict — odds ratios + p-values]
+
+Interpret for a VP of Operations:
+1. What does the delivery_days_clean OR mean in plain English?
+2. Which predictors are statistically significant?
+3. What should the business NOT conclude from this model?
+
+Do not claim causality. Use business language, not statistics jargon.</pre>
+      </div>
+    </div>
+
+    <div class="prompt-card">
+      <div class="ph"><b>Alert Email Refinement</b><div class="tag">After email generated</div></div>
+      <div class="code">
+        <button class="copy-btn">copy</button>
+<pre>Here is an alert email draft (numbers verified in Python):
+[PASTE email_draft]
+
+Improve tone and clarity for a business audience.
+Rules:
+- Do not change any numbers.
+- Do not add data not in the draft.
+- Add one "recommended investigation step" sentence.
+- Flag any part that should be verified before sending.
+- Keep total email under 180 words.</pre>
+      </div>
+    </div>
+
+    <div class="prompt-card">
+      <div class="ph"><b>⚠ AI Hallucination — 3-step live demo script</b><div class="tag" style="background:rgba(255,211,110,.12);color:var(--accent3);border-color:rgba(255,211,110,.25)">Run in class</div></div>
+      <div class="code">
+        <button class="copy-btn">copy</button>
+<pre><span class="cm"># STEP 1 — Bad prompt (run this first, show the output)</span>
+<span class="cm"># Send to AI without any data:</span>
+<span class="cm"># "What was our revenue last month and which channel performed best?"</span>
+<span class="cm">#</span>
+<span class="cm"># AI will answer confidently with invented numbers.</span>
+<span class="cm"># Ask the student: "Are any of these numbers in our dataset?"</span>
+
+<span class="cm"># STEP 2 — Ask the student to spot the hallucination</span>
+<span class="cm"># Compare AI's invented numbers to monthly_metrics.tail(1)</span>
+<span class="cm"># They will NEVER match. This is the demo moment.</span>
+
+<span class="cm"># STEP 3 — Good prompt (constrained to verified output)</span>
+<span class="cm"># "Based only on the following Python output — no other data —</span>
+<span class="cm">#  what was our revenue last month and which channel had the highest revenue?</span>
+<span class="cm">#</span>
+<span class="cm">#  [PASTE monthly_metrics.tail(3).to_string()]</span>
+<span class="cm">#  [PASTE channel_metrics.to_string()]"</span>
+<span class="cm">#</span>
+<span class="cm"># Now AI is constrained. The answer is verifiable.</span>
+<span class="cm"># Ask: "Which prompt would you send to a stakeholder's inbox?"</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="warn" style="margin-top:14px">
+    <strong>When NOT to use AI:</strong> Calculating any number · Deciding metric denominators · Diagnosing data quality issues · Choosing statistical model parameters · Approving an alert email for actual stakeholders.
+  </div>
+</section>
+
+<!-- 10 DELIVERABLE -->
+<section id="deliverable">
+  <div class="kicker">Final deliverable</div>
+  <h2>What the student should leave with.</h2>
+  <div class="grid g3">
+    <div class="card pad"><h3>1. Workflow fluency</h3><p>The student can explain each agent's purpose, input/output contract, and failure mode without looking at notes.</p></div>
+    <div class="card pad"><h3>2. EDA discipline</h3><p>The student knows what 6 EDA outputs to produce for a revenue-diagnosis task, and can state the business question each one answers.</p></div>
+    <div class="card pad"><h3>3. Statistical literacy</h3><p>The student can explain a logistic regression odds ratio to a non-technical manager and correctly distinguish association from causation.</p></div>
+  </div>
+
+  <div class="mini" style="margin-top:14px">
+    <b>Student self-check — can you do these without notes?</b>
+    <ul>
+      <li>Define revenue with grain, numerator, denominator, and filter before touching code.</li>
+      <li>Identify 5 categories of data quality issues and explain the business impact of each.</li>
+      <li>Build an order-level fact table from 5 raw tables without row duplication.</li>
+      <li>Compute monthly revenue, AOV, low-review rate, and MoM change in one groupby.</li>
+      <li>Run logistic regression and explain the delivery_days OR to a VP in plain English.</li>
+      <li>Produce a verified alert email draft where every number traces to a Python cell.</li>
+      <li>Explain in one sentence why you cannot send the email without human review.</li>
+    </ul>
+  </div>
+
+  <div class="note" style="margin-top:14px">If you teach this well, the student leaves knowing how a modern analytics workflow is <em>designed</em> — not just how to call <code>groupby</code>. The 2-year analyst who already knows pandas gains something they cannot get from documentation: <strong>the discipline to defend their numbers.</strong></div>
+
+  <h3 style="margin-top:22px;margin-bottom:11px">5 sentences to repeat until they stick</h3>
+  <div class="mantra-bar">
+    <div class="mantra-item">
+      <div class="mn">01 · Metric</div>
+      <p><strong>Before coding,</strong> define the contract.</p>
+    </div>
+    <div class="mantra-item">
+      <div class="mn">02 · Join</div>
+      <p><strong>Before joining,</strong> define the grain.</p>
+    </div>
+    <div class="mantra-item">
+      <div class="mn">03 · Quality</div>
+      <p><strong>Before trusting,</strong> score it 0–100.</p>
+    </div>
+    <div class="mantra-item">
+      <div class="mn">04 · Model</div>
+      <p><strong>Before modeling,</strong> do structured EDA.</p>
+    </div>
+    <div class="mantra-item">
+      <div class="mn">05 · Alert</div>
+      <p><strong>Before sending,</strong> require human review.</p>
+    </div>
+  </div>
+
+  <div class="teacher" style="margin-top:14px">End-of-class question: "Looking back at the VP message we opened with — could you now send a defensible reply? What would it say, and what Python cell does every number come from?"</div>
+</section>
+
+<footer>
+  <span>AI Analytics Agent Courseware · Dense reference · English + 中文 hints · 90-min 1:1</span>
+  <a class="btn ghost" style="font-size:12px;padding:6px 12px" href="#positioning">↑ Back to top</a>
+</footer>
+
+</main>
+</div>
+
+<script>
+// ── Scroll progress ──────────────────────────────────────────────
+const bar = document.getElementById('progress');
+window.addEventListener('scroll', () => {
+  const h = document.documentElement;
+  const pct = h.scrollTop / (h.scrollHeight - h.clientHeight) * 100;
+  bar.style.width = pct + '%';
+}, { passive: true });
+
+// ── Active nav via IntersectionObserver ──────────────────────────
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('#sidebar-nav a');
+
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const link = document.querySelector(`#sidebar-nav a[href="#${entry.target.id}"]`);
+      if (link) {
+        link.classList.add('active');
+        link.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+
+sections.forEach(s => obs.observe(s));
+
+// ── Section entrance animations ──────────────────────────────────
+const enterObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { rootMargin: '0px 0px -8% 0px' });
+
+document.querySelectorAll('section').forEach(s => enterObs.observe(s));
+
+// ── Copy to clipboard ────────────────────────────────────────────
+document.querySelectorAll('.copy-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const pre = btn.closest('.code').querySelector('pre');
+    const text = pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied ✓';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'copy';
+        btn.classList.remove('copied');
+      }, 1800);
+    });
+  });
+});
+
+// ── Smooth detail toggle ─────────────────────────────────────────
+document.querySelectorAll('.agent summary').forEach(s => {
+  s.addEventListener('click', e => {
+    const details = s.closest('details');
+    if (details.open) { e.preventDefault(); details.removeAttribute('open'); }
+  });
+});
+</script>
+</body>
+</html>
